@@ -11,6 +11,6 @@ window.APP_CONFIG = {
 
   // Paste your Google Apps Script Web App URL here:
   // Example: "https://script.google.com/macros/s/AKfy.../exec"
-  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbyEXZZFrIf_gI0aDk1IrzsukpvJ317927Ax18JpcdaYkYJFzQ6aNaX0-Dan8-tEMLAP/exec"
+  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbyiIDXuMB-YaBGb3AC1pgR1UzTuI2MQz0_wdr6N2xkanLK-FhgMZ8y4kQASuzPysYLWtw/exec"
 
 };
