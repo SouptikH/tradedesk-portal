@@ -426,6 +426,13 @@
       <button class="modal-close" onclick="closeModal('modal-entry')">×</button>
     </div>
     <div class="modal-body">
+      <div style="background:var(--bg);border:1px solid var(--border);padding:12px 16px;margin-bottom:16px;font-family:var(--mono);font-size:12px;display:flex;justify-content:space-between;align-items:center">
+        <span style="color:var(--text-dim)">Available in Trading Portfolio</span>
+        <span id="entry-modal-portbal" style="color:var(--accent);font-weight:600">—</span>
+      </div>
+      <div id="entry-overdraft-warn" style="display:none;background:rgba(255,165,2,0.08);border:1px solid rgba(255,165,2,0.4);color:var(--yellow);font-family:var(--mono);font-size:11px;padding:10px 14px;margin-bottom:14px">
+        ⚠ Entry capital exceeds Trading Portfolio balance. Proceeding will create a negative balance.
+      </div>
       <div class="form-grid">
         <div class="form-field">
           <label class="form-label">Date &amp; Time</label>
@@ -442,16 +449,62 @@
           <label class="form-label">Entry Capital (₹)</label>
           <div class="capital-control">
             <button class="capital-btn" onclick="adjustCapital('entry-capital',-1000)">−</button>
-            <input class="capital-input" id="entry-capital" type="number" placeholder="Amount entering the market">
+            <input class="capital-input" id="entry-capital" type="number" placeholder="Amount entering the market" oninput="checkEntryOverdraft()">
             <button class="capital-btn" onclick="adjustCapital('entry-capital',1000)">+</button>
           </div>
         </div>
       </div>
-      <p style="font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-top:14px">Exit capital will be added later using the <strong style="color:var(--accent)">CLOSE</strong> button on this entry.</p>
+      <p style="font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-top:14px">Entry capital is automatically deducted from Trading Portfolio. Exit capital is returned on close.</p>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modal-entry')">CANCEL</button>
       <button class="btn btn-accent" onclick="submitEntry()">OPEN ENTRY</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: EDIT ENTRY ═══ -->
+<div class="modal-overlay" id="modal-edit-entry">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">EDIT ENTRY</div>
+      <button class="modal-close" onclick="closeModal('modal-edit-entry')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-entry-id">
+      <input type="hidden" id="edit-entry-type">
+      <div class="form-grid">
+        <div class="form-field">
+          <label class="form-label">Date &amp; Time</label>
+          <input class="form-input" id="edit-entry-datetime" type="datetime-local">
+        </div>
+        <div class="form-field">
+          <label class="form-label">Type</label>
+          <select class="form-select" id="edit-entry-type-sel">
+            <option value="FO">F&amp;O Stocks</option>
+            <option value="FOC">F&amp;O Commodities</option>
+          </select>
+        </div>
+        <div class="form-field" style="grid-column:1/-1">
+          <label class="form-label">Entry Capital (₹)</label>
+          <div class="capital-control">
+            <button class="capital-btn" onclick="adjustCapital('edit-entry-capital',-1000)">−</button>
+            <input class="capital-input" id="edit-entry-capital" type="number" placeholder="Entry amount">
+            <button class="capital-btn" onclick="adjustCapital('edit-entry-capital',1000)">+</button>
+          </div>
+        </div>
+      </div>
+      <p style="font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-top:14px">To update exit capital on a closed entry, edit only the exit capital field below (leave blank to keep unchanged).</p>
+      <div class="form-grid" style="margin-top:14px" id="edit-exit-row">
+        <div class="form-field" style="grid-column:1/-1">
+          <label class="form-label">Exit Capital (₹) — closed entries only</label>
+          <input class="form-input" id="edit-entry-exit" type="number" placeholder="Leave blank to keep current value">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-edit-entry')">CANCEL</button>
+      <button class="btn btn-accent" onclick="submitEditEntry()">SAVE CHANGES</button>
     </div>
   </div>
 </div>
@@ -792,7 +845,19 @@ function openNewEntryModal() {
   document.getElementById('entry-datetime').value = now.toISOString().slice(0,16);
   document.getElementById('entry-capital').value = '';
   document.getElementById('entry-type').value = 'FO';
+  document.getElementById('entry-overdraft-warn').style.display = 'none';
+  // Show current portfolio balance
+  const portBalEl = document.getElementById('bal-portfolio');
+  const portText = portBalEl ? portBalEl.textContent : '—';
+  document.getElementById('entry-modal-portbal').textContent = portText;
   openModal('modal-entry');
+}
+
+function checkEntryOverdraft() {
+  const entry = parseFloat(document.getElementById('entry-capital').value)||0;
+  const portText = document.getElementById('bal-portfolio').textContent.replace(/[₹,\s]/g,'');
+  const portBal = parseFloat(portText)||0;
+  document.getElementById('entry-overdraft-warn').style.display = entry > portBal && entry > 0 ? '' : 'none';
 }
 
 async function submitEntry() {
@@ -804,9 +869,41 @@ async function submitEntry() {
   try {
     const res = await apiCall({ action:'addEntry', entryCapital, type, datetime });
     hideLoading();
-    if (res.success) { closeModal('modal-entry'); toast('Entry opened'); loadTradingEntries(); loadAuditLog(); }
+    if (res.success) { closeModal('modal-entry'); toast('Entry opened — portfolio updated'); loadTradingEntries(); loadCapital(); loadAuditLog(); }
     else toast(res.message||'Error','error');
   } catch(e) { hideLoading(); toast('Connection error','error'); }
+}
+
+
+function openEditEntryModal(r) {
+  document.getElementById('edit-entry-id').value = r.id;
+  document.getElementById('edit-entry-type').value = r.type;
+  document.getElementById('edit-entry-type-sel').value = r.type || 'FO';
+  // Format datetime for input
+  const dt = r.datetime ? String(r.datetime).replace(' ', 'T').slice(0, 16) : '';
+  document.getElementById('edit-entry-datetime').value = dt;
+  document.getElementById('edit-entry-capital').value = r.entryCapital || '';
+  document.getElementById('edit-entry-exit').value = r.exitCapital || '';
+  // Show exit field only for closed entries
+  document.getElementById('edit-exit-row').style.display = r.status === 'CLOSED' ? '' : 'none';
+  openModal('modal-edit-entry');
+}
+
+async function submitEditEntry() {
+  const id = document.getElementById('edit-entry-id').value;
+  const type = document.getElementById('edit-entry-type-sel').value;
+  const datetime = document.getElementById('edit-entry-datetime').value;
+  const entryCapital = parseFloat(document.getElementById('edit-entry-capital').value);
+  const exitCapitalRaw = document.getElementById('edit-entry-exit').value;
+  const exitCapital = exitCapitalRaw !== '' ? parseFloat(exitCapitalRaw) : null;
+  if (!entryCapital) return toast('Entry capital required', 'error');
+  showLoading('Saving changes...');
+  try {
+    const res = await apiCall({ action: 'editEntry', id, type, datetime, entryCapital, exitCapital });
+    hideLoading();
+    if (res.success) { closeModal('modal-edit-entry'); toast('Entry updated'); loadTradingEntries(); loadAuditLog(); }
+    else toast(res.message || 'Error', 'error');
+  } catch(e) { hideLoading(); toast('Connection error', 'error'); }
 }
 
 function openCloseEntryModal(id, entryCapital) {
@@ -835,7 +932,7 @@ async function submitCloseEntry() {
   try {
     const res = await apiCall({ action:'closeEntry', id, exitCapital });
     hideLoading();
-    if (res.success) { closeModal('modal-close-entry'); toast('Entry closed'); loadTradingEntries(); loadAuditLog(); }
+    if (res.success) { closeModal('modal-close-entry'); toast(`Entry closed — P/L: ₹${formatNum(res.pl||0)}`); loadTradingEntries(); loadCapital(); loadAuditLog(); }
     else toast(res.message||'Error','error');
   } catch(e) { hideLoading(); toast('Connection error','error'); }
 }
@@ -867,6 +964,7 @@ function renderTradingTable(tbodyId, rows, type) {
     const tagClass = r.type==='FO' ? 'tag-fo' : 'tag-foc';
     const tagLabel = r.type==='FO' ? 'F&O Stocks' : 'F&O Commodities';
     const closeBtn = isOpen ? `<button class="btn btn-green btn-sm" onclick="openCloseEntryModal('${r.id}','${r.entryCapital}')">CLOSE</button>` : '';
+    const editBtn = `<button class="btn btn-outline btn-sm" onclick='openEditEntryModal(${JSON.stringify(r)})'>EDIT</button>`;
     return `<tr>
       <td style="font-family:var(--mono);font-size:11px">${r.datetime||'—'}</td>
       <td>₹ ${formatNum(r.entryCapital)}</td>
@@ -875,7 +973,7 @@ function renderTradingTable(tbodyId, rows, type) {
       <td>${statusHtml}</td>
       <td><span class="tag ${tagClass}">${tagLabel}</span></td>
       <td style="color:var(--accent);font-family:var(--mono);font-size:11px">${r.loggedBy||'—'}</td>
-      <td style="display:flex;gap:6px">${closeBtn}</td>
+      <td style="display:flex;gap:6px">${editBtn}${closeBtn}</td>
     </tr>`;
   }).join('');
 }
@@ -959,8 +1057,8 @@ async function loadCapital() {
 function renderCapitalTable(txs) {
   const tbody = document.getElementById('capital-tbody');
   if (!txs.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:30px">No transactions yet.</td></tr>'; return; }
-  const typeLabels = { deposit:'Deposit', withdraw:'Withdraw', 'portfolio-deposit':'Portfolio Add', 'portfolio-withdraw':'Portfolio Withdraw', 'capital-to-portfolio':'Transfer → Portfolio', 'portfolio-to-capital':'Transfer → Capital' };
-  const typeColors = { deposit:'var(--green)', withdraw:'var(--red)', 'portfolio-deposit':'var(--green)', 'portfolio-withdraw':'var(--red)', 'capital-to-portfolio':'#a78bfa', 'portfolio-to-capital':'#a78bfa' };
+  const typeLabels = { deposit:'Deposit', withdraw:'Withdraw', 'portfolio-deposit':'Portfolio Add', 'portfolio-withdraw':'Portfolio Withdraw', 'capital-to-portfolio':'Transfer → Portfolio', 'portfolio-to-capital':'Transfer → Capital', 'entry-deduct':'Entry Deployed', 'entry-return':'Entry Returned' };
+  const typeColors = { deposit:'var(--green)', withdraw:'var(--red)', 'portfolio-deposit':'var(--green)', 'portfolio-withdraw':'var(--red)', 'capital-to-portfolio':'#a78bfa', 'portfolio-to-capital':'#a78bfa', 'entry-deduct':'var(--yellow)', 'entry-return':'var(--accent)' };
   tbody.innerHTML = [...txs].reverse().map(t => {
     const label = typeLabels[t.actionType] || t.actionType;
     const color = typeColors[t.actionType] || 'var(--text)';
@@ -1367,6 +1465,7 @@ function adjustCapital(fieldId, delta) {
   const el = document.getElementById(fieldId);
   el.value = Math.max(0, (parseFloat(el.value)||0) + delta);
   if (fieldId==='close-exit-capital') updateClosePL();
+  if (fieldId==='entry-capital') checkEntryOverdraft();
 }
 
 function formatNum(val) {
