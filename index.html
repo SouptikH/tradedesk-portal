@@ -1267,14 +1267,11 @@ async function apiCall(payload) {
   if (!window.APP_CONFIG || !window.APP_CONFIG.APPS_SCRIPT_URL) {
     throw new Error('Apps Script URL not configured');
   }
-  payload.userId = currentUser;
-  const url = window.APP_CONFIG.APPS_SCRIPT_URL;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify(payload),
-    redirect: 'follow'
-  });
+  if (!payload.userId) payload.userId = currentUser;
+  // Use GET + URL param to avoid CORS preflight issues with Apps Script
+  const url = window.APP_CONFIG.APPS_SCRIPT_URL
+    + '?data=' + encodeURIComponent(JSON.stringify(payload));
+  const res = await fetch(url, { redirect: 'follow' });
   return await res.json();
 }
 
