@@ -1093,7 +1093,7 @@ async function doLogin() {
     const res = await apiCall({ action: 'login', userId: uid, password: pw });
     hideLoading();
     if (res.success) {
-      loginSuccess(uid, res.isMaster);
+      loginSuccess(uid, res.isMaster === true || res.isMaster === "true");
     } else {
       showError(res.message || 'Invalid credentials');
     }
@@ -1112,8 +1112,8 @@ function loginSuccess(uid, master) {
   document.getElementById('role-display').textContent = master ? 'MASTER' : 'ADMIN';
 
   if (master) {
-    document.querySelectorAll('.master-only').forEach(el => el.style.display = '');
-    document.getElementById('tab-btn-admin').style.display = '';
+    document.querySelectorAll('.master-only').forEach(el => el.style.display = 'block');
+    document.getElementById('tab-btn-admin').style.display = 'inline-block';
   }
   loadAll();
 }
