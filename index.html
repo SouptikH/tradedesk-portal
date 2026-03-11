@@ -301,7 +301,7 @@
       <div class="card-title">Transaction History</div>
       <div class="table-wrap">
         <table><thead><tr>
-          <th>Date &amp; Time</th><th>Type</th><th>Amount</th><th>Balance</th><th>Note</th><th>By</th>
+          <th>Date &amp; Time</th><th>Type</th><th>Amount</th><th>Balance</th><th>Note</th><th>By</th><th>Actions</th>
         </tr></thead>
         <tbody id="capital-tbody"><tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:30px">Loading...</td></tr></tbody></table>
       </div>
@@ -710,6 +710,66 @@
   </div>
 </div>
 
+
+<!-- ═══ MODAL: EDIT CAPITAL TRANSACTION ═══ -->
+<div class="modal-overlay" id="modal-edit-capital">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">EDIT TRANSACTION</div>
+      <button class="modal-close" onclick="closeModal('modal-edit-capital')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-cap-id">
+      <div style="background:var(--bg);border:1px solid var(--border);padding:12px 16px;margin-bottom:16px;font-family:var(--mono);font-size:12px">
+        <span style="color:var(--text-dim)">Type: </span><span id="edit-cap-type-display" style="color:var(--accent)"></span>
+        &nbsp;&nbsp;<span style="color:var(--text-dim)">Original: </span><span id="edit-cap-orig" style="color:var(--text)"></span>
+      </div>
+      <div class="form-grid">
+        <div class="form-field" style="grid-column:1/-1">
+          <label class="form-label">New Amount (₹)</label>
+          <div class="capital-control">
+            <button class="capital-btn" onclick="adjustCapital('edit-cap-amount',-1000)">−</button>
+            <input class="capital-input" id="edit-cap-amount" type="number" placeholder="New amount">
+            <button class="capital-btn" onclick="adjustCapital('edit-cap-amount',1000)">+</button>
+          </div>
+        </div>
+        <div class="form-field" style="grid-column:1/-1">
+          <label class="form-label">Note</label>
+          <input class="form-input" id="edit-cap-note" placeholder="Update note...">
+        </div>
+      </div>
+      <p style="font-family:var(--mono);font-size:11px;color:var(--yellow);margin-top:14px">⚠ All balances will recalculate from scratch after saving.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-edit-capital')">CANCEL</button>
+      <button class="btn btn-accent" onclick="submitEditCapital()">SAVE CHANGES</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: CONFIRM DELETE ═══ -->
+<div class="modal-overlay" id="modal-confirm-delete">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">CONFIRM DELETE</div>
+      <button class="modal-close" onclick="closeModal('modal-confirm-delete')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="delete-type">
+      <input type="hidden" id="delete-id">
+      <div style="background:rgba(255,71,87,0.08);border:1px solid rgba(255,71,87,0.3);padding:16px;margin-bottom:16px">
+        <p style="font-family:var(--mono);font-size:13px;color:var(--red);margin-bottom:8px">⚠ This action cannot be undone.</p>
+        <p style="font-family:var(--mono);font-size:12px;color:var(--text-dim)" id="delete-desc"></p>
+      </div>
+      <p style="font-family:var(--mono);font-size:12px;color:var(--text-dim)">The deletion will be permanently recorded in the Audit Log.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-confirm-delete')">CANCEL</button>
+      <button class="btn btn-danger" onclick="executeDelete()">DELETE</button>
+    </div>
+  </div>
+</div>
+
 <!-- Loading -->
 <div class="loading-overlay" id="loading-overlay">
   <div class="loading-box"><div class="loader"></div><span id="loading-msg">Processing...</span></div>
@@ -964,7 +1024,8 @@ function renderTradingTable(tbodyId, rows, type) {
     const tagClass = r.type==='FO' ? 'tag-fo' : 'tag-foc';
     const tagLabel = r.type==='FO' ? 'F&O Stocks' : 'F&O Commodities';
     const closeBtn = isOpen ? `<button class="btn btn-green btn-sm" onclick="openCloseEntryModal('${r.id}','${r.entryCapital}')">CLOSE</button>` : '';
-    const editBtn = `<button class="btn btn-outline btn-sm" onclick='openEditEntryModal(${JSON.stringify(r)})'>EDIT</button>`;
+    const editBtn   = `<button class="btn btn-outline btn-sm" onclick='openEditEntryModal(${JSON.stringify(r)})'>EDIT</button>`;
+    const deleteBtn = `<button class="btn btn-danger btn-sm" onclick="confirmDeleteEntry('${r.id}','${r.type}','${r.entryCapital}')">DEL</button>`;
     return `<tr>
       <td style="font-family:var(--mono);font-size:11px">${r.datetime||'—'}</td>
       <td>₹ ${formatNum(r.entryCapital)}</td>
@@ -973,7 +1034,7 @@ function renderTradingTable(tbodyId, rows, type) {
       <td>${statusHtml}</td>
       <td><span class="tag ${tagClass}">${tagLabel}</span></td>
       <td style="color:var(--accent);font-family:var(--mono);font-size:11px">${r.loggedBy||'—'}</td>
-      <td style="display:flex;gap:6px">${editBtn}${closeBtn}</td>
+      <td style="display:flex;gap:6px">${editBtn}${closeBtn}${deleteBtn}</td>
     </tr>`;
   }).join('');
 }
@@ -1057,8 +1118,8 @@ async function loadCapital() {
 function renderCapitalTable(txs) {
   const tbody = document.getElementById('capital-tbody');
   if (!txs.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:30px">No transactions yet.</td></tr>'; return; }
-  const typeLabels = { deposit:'Deposit', withdraw:'Withdraw', 'portfolio-deposit':'Portfolio Add', 'portfolio-withdraw':'Portfolio Withdraw', 'capital-to-portfolio':'Transfer → Portfolio', 'portfolio-to-capital':'Transfer → Capital', 'entry-deduct':'Entry Deployed', 'entry-return':'Entry Returned' };
-  const typeColors = { deposit:'var(--green)', withdraw:'var(--red)', 'portfolio-deposit':'var(--green)', 'portfolio-withdraw':'var(--red)', 'capital-to-portfolio':'#a78bfa', 'portfolio-to-capital':'#a78bfa', 'entry-deduct':'var(--yellow)', 'entry-return':'var(--accent)' };
+  const typeLabels = { deposit:'Deposit', withdraw:'Withdraw', 'portfolio-deposit':'Portfolio Add', 'portfolio-withdraw':'Portfolio Withdraw', 'capital-to-portfolio':'Transfer → Portfolio', 'portfolio-to-capital':'Transfer → Capital', 'entry-deduct':'Entry Deployed', 'entry-return':'Entry Returned', 'customer-deposit':'Customer Received', 'customer-disburse':'Customer Disbursed' };
+  const typeColors = { deposit:'var(--green)', withdraw:'var(--red)', 'portfolio-deposit':'var(--green)', 'portfolio-withdraw':'var(--red)', 'capital-to-portfolio':'#a78bfa', 'portfolio-to-capital':'#a78bfa', 'entry-deduct':'var(--yellow)', 'entry-return':'var(--accent)', 'customer-deposit':'var(--green)', 'customer-disburse':'var(--red)' };
   tbody.innerHTML = [...txs].reverse().map(t => {
     const label = typeLabels[t.actionType] || t.actionType;
     const color = typeColors[t.actionType] || 'var(--text)';
@@ -1209,7 +1270,7 @@ async function submitCustomer() {
   try {
     const res = await apiCall({ action: id?'editCustomer':'addCustomer', id, name, paymentDate, principal, returnPct, returnAmt, dueDate, remarks });
     hideLoading();
-    if (res.success) { closeModal('modal-customer'); toast(id?'Customer updated':'Customer added'); loadCustomers(); loadAuditLog(); }
+    if (res.success) { closeModal('modal-customer'); toast(id?'Customer updated':'Customer added — principal added to Capital'); loadCustomers(); loadCapital(); loadAuditLog(); }
     else toast(res.message||'Error','error');
   } catch(e) { hideLoading(); toast('Connection error','error'); }
 }
@@ -1249,6 +1310,7 @@ function renderActiveCustomers(rows) {
       <td style="display:flex;gap:6px">
         <button class="btn btn-outline btn-sm" onclick='openEditCustomerModal(${JSON.stringify(r)})'>EDIT</button>
         <button class="btn btn-warn btn-sm" onclick="openDisburseModal('${r.id}','${escHtml(r.name)}')">DISBURSE</button>
+        <button class="btn btn-danger btn-sm" onclick="confirmDeleteCustomer('${r.id}','${escHtml(r.name)}','${r.principal}')">DEL</button>
       </td>
     </tr>`;
   }).join('');
@@ -1311,7 +1373,7 @@ async function confirmDisburse() {
   try {
     const res = await apiCall({ action:'disburseCustomer', id, disbursedOn, remarks });
     hideLoading();
-    if (res.success) { closeModal('modal-disburse'); toast('Disbursement recorded'); loadCustomers(); loadAuditLog(); }
+    if (res.success) { closeModal('modal-disburse'); toast('Disbursement recorded — capital updated'); loadCustomers(); loadCapital(); loadAuditLog(); }
     else toast(res.message||'Error','error');
   } catch(e) { hideLoading(); toast('Connection error','error'); }
 }
@@ -1382,6 +1444,68 @@ async function removeAdmin(uid) {
     if (res.success) { toast('Admin removed'); loadAdmins(); loadAuditLog(); }
     else toast(res.message||'Error','error');
   } catch(e) { hideLoading(); toast('Connection error','error'); }
+}
+
+
+// ══════════════════════════════════════════════════════
+//  EDIT CAPITAL TRANSACTION
+// ══════════════════════════════════════════════════════
+function openEditCapitalModal(t) {
+  document.getElementById('edit-cap-id').value = t.id;
+  document.getElementById('edit-cap-type-display').textContent = t.actionType;
+  document.getElementById('edit-cap-orig').textContent = '₹ ' + formatNum(t.amount);
+  document.getElementById('edit-cap-amount').value = t.amount;
+  document.getElementById('edit-cap-note').value = t.note || '';
+  openModal('modal-edit-capital');
+}
+
+async function submitEditCapital() {
+  const id        = document.getElementById('edit-cap-id').value;
+  const newAmount = parseFloat(document.getElementById('edit-cap-amount').value);
+  const newNote   = document.getElementById('edit-cap-note').value.trim();
+  if (!newAmount || newAmount <= 0) return toast('Enter a valid amount', 'error');
+  showLoading('Saving...');
+  try {
+    const res = await apiCall({ action:'editCapitalTransaction', id, newAmount, newNote });
+    hideLoading();
+    if (res.success) { closeModal('modal-edit-capital'); toast('Transaction updated — balances recalculated'); loadCapital(); loadAuditLog(); }
+    else toast(res.message || 'Error', 'error');
+  } catch(e) { hideLoading(); toast('Connection error', 'error'); }
+}
+
+// ══════════════════════════════════════════════════════
+//  DELETE ENTRY / CUSTOMER
+// ══════════════════════════════════════════════════════
+function confirmDeleteEntry(id, type, entryCapital) {
+  document.getElementById('delete-type').value = 'entry';
+  document.getElementById('delete-id').value = id;
+  document.getElementById('delete-desc').textContent = `${type} entry — Entry Capital: ₹${formatNum(entryCapital)}. If open, capital will be returned to portfolio.`;
+  openModal('modal-confirm-delete');
+}
+
+function confirmDeleteCustomer(id, name, principal) {
+  document.getElementById('delete-type').value = 'customer';
+  document.getElementById('delete-id').value = id;
+  document.getElementById('delete-desc').textContent = `Customer: ${name} — Principal: ₹${formatNum(principal)}. Amount will be reversed from Capital Balance.`;
+  openModal('modal-confirm-delete');
+}
+
+async function executeDelete() {
+  const type = document.getElementById('delete-type').value;
+  const id   = document.getElementById('delete-id').value;
+  const action = type === 'entry' ? 'deleteEntry' : 'deleteCustomer';
+  showLoading('Deleting...');
+  try {
+    const res = await apiCall({ action, id });
+    hideLoading();
+    if (res.success) {
+      closeModal('modal-confirm-delete');
+      toast('Deleted and logged in audit trail');
+      if (type === 'entry') { loadTradingEntries(); loadCapital(); }
+      else { loadCustomers(); loadCapital(); }
+      loadAuditLog();
+    } else toast(res.message || 'Error', 'error');
+  } catch(e) { hideLoading(); toast('Connection error', 'error'); }
 }
 
 // ══════════════════════════════════════════════════════
