@@ -698,6 +698,9 @@
       <input class="field-input" type="password" id="login-pass" placeholder="••••••••••">
     </div>
     <button class="btn-primary" onclick="doLogin()">ACCESS PORTAL</button>
+    <div style="text-align:center;margin-top:14px">
+      <button onclick="showForgotPassword()" style="background:none;border:none;color:var(--text-dim);font-family:var(--mono);font-size:11px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;text-decoration:underline">Forgot Password?</button>
+    </div>
     <div class="login-error" id="login-error">Invalid credentials. Please try again.</div>
   </div>
 </div>
@@ -713,6 +716,7 @@
         <span id="current-user-display">—</span>
         <span class="role-pill" id="role-display">ADMIN</span>
       </div>
+      <button class="btn-logout" onclick="openChangePasswordModal()" style="border-color:var(--border);margin-right:4px">CHANGE PWD</button>
       <button class="btn-logout" onclick="doLogout()">LOGOUT</button>
     </div>
   </div>
@@ -883,7 +887,7 @@
     </div>
     <div class="card">
       <div class="card-title">Add New Admin</div>
-      <div class="form-grid" style="max-width:500px">
+      <div class="form-grid" style="max-width:700px">
         <div class="form-field">
           <label class="form-label">User ID</label>
           <input class="form-input" id="new-admin-user" placeholder="e.g. john_admin" autocomplete="off">
@@ -891,6 +895,10 @@
         <div class="form-field">
           <label class="form-label">Password</label>
           <input class="form-input" type="password" id="new-admin-pass" placeholder="••••••••">
+        </div>
+        <div class="form-field">
+          <label class="form-label">Email (mandatory)</label>
+          <input class="form-input" type="email" id="new-admin-email" placeholder="admin@example.com">
         </div>
       </div>
       <div style="margin-top:16px">
@@ -904,12 +912,13 @@
           <thead>
             <tr>
               <th>User ID</th>
+              <th>Email</th>
               <th>Added On</th>
               <th>Added By</th>
               <th>Actions</th>
             </tr>
           </thead>
-          <tbody id="admin-list-tbody"><tr><td colspan="4" style="text-align:center;color:var(--text-dim);padding:30px">Loading...</td></tr></tbody>
+          <tbody id="admin-list-tbody"><tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:30px">Loading...</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -1034,6 +1043,97 @@
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modal-disburse')">CANCEL</button>
       <button class="btn btn-accent" onclick="confirmDisburse()">CONFIRM DISBURSEMENT</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ─── MODAL: FORGOT PASSWORD (Step 1 — Request OTP) ─── -->
+<div class="modal-overlay" id="modal-forgot-step1">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">RESET PASSWORD</div>
+      <button class="modal-close" onclick="closeModal('modal-forgot-step1')">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-family:var(--mono);font-size:12px;color:var(--text-dim);margin-bottom:20px;line-height:1.7">Enter your User ID and registered email. A 6-digit OTP will be sent to your email.</p>
+      <div class="form-grid">
+        <div class="form-field">
+          <label class="form-label">User ID</label>
+          <input class="form-input" id="otp-userid" placeholder="Your user ID" autocomplete="off">
+        </div>
+        <div class="form-field">
+          <label class="form-label">Registered Email</label>
+          <input class="form-input" type="email" id="otp-email" placeholder="your@email.com">
+        </div>
+      </div>
+      <div class="login-error" id="otp-error1" style="margin-top:12px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-forgot-step1')">CANCEL</button>
+      <button class="btn btn-accent" onclick="sendOtp()">SEND OTP</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── MODAL: FORGOT PASSWORD (Step 2 — Enter OTP + New Password) ─── -->
+<div class="modal-overlay" id="modal-forgot-step2">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">ENTER OTP</div>
+      <button class="modal-close" onclick="closeModal('modal-forgot-step2')">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-family:var(--mono);font-size:12px;color:var(--text-dim);margin-bottom:20px;line-height:1.7">Enter the 6-digit OTP sent to your email and your new password.</p>
+      <div class="form-grid">
+        <div class="form-field">
+          <label class="form-label">OTP Code</label>
+          <input class="form-input" id="otp-code" placeholder="6-digit code" maxlength="6" style="letter-spacing:6px;font-size:18px;text-align:center">
+        </div>
+        <div class="form-field">
+          <label class="form-label">New Password</label>
+          <input class="form-input" type="password" id="otp-newpass" placeholder="Min 6 characters">
+        </div>
+        <div class="form-field">
+          <label class="form-label">Confirm New Password</label>
+          <input class="form-input" type="password" id="otp-confirmpass" placeholder="Repeat password">
+        </div>
+      </div>
+      <div class="login-error" id="otp-error2" style="margin-top:12px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-forgot-step2')">CANCEL</button>
+      <button class="btn btn-accent" onclick="submitPasswordReset()">RESET PASSWORD</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── MODAL: CHANGE PASSWORD (logged in) ─── -->
+<div class="modal-overlay" id="modal-change-password">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">CHANGE PASSWORD</div>
+      <button class="modal-close" onclick="closeModal('modal-change-password')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-field" style="grid-column:1/-1">
+          <label class="form-label">Current Password</label>
+          <input class="form-input" type="password" id="cp-current" placeholder="Current password">
+        </div>
+        <div class="form-field">
+          <label class="form-label">New Password</label>
+          <input class="form-input" type="password" id="cp-new" placeholder="Min 6 characters">
+        </div>
+        <div class="form-field">
+          <label class="form-label">Confirm New Password</label>
+          <input class="form-input" type="password" id="cp-confirm" placeholder="Repeat new password">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-change-password')">CANCEL</button>
+      <button class="btn btn-accent" onclick="submitChangePassword()">UPDATE PASSWORD</button>
     </div>
   </div>
 </div>
@@ -1542,6 +1642,7 @@ async function loadAdmins() {
     }
     tbody.innerHTML = admins.map(a => `<tr>
       <td style="font-family:var(--mono)">${a.userId}</td>
+      <td style="font-family:var(--mono);font-size:11px;color:var(--text-dim)">${a.email || '—'}</td>
       <td style="font-family:var(--mono);font-size:11px">${a.addedOn || '—'}</td>
       <td style="color:var(--text-dim);font-family:var(--mono);font-size:11px">${a.addedBy || '—'}</td>
       <td><button class="btn btn-danger btn-sm" onclick="removeAdmin('${a.userId}')">REMOVE</button></td>
@@ -1550,13 +1651,14 @@ async function loadAdmins() {
 }
 
 async function addAdmin() {
-  const uid = document.getElementById('new-admin-user').value.trim();
-  const pw = document.getElementById('new-admin-pass').value;
-  if (!uid || !pw) return toast('User ID and password required', 'error');
+  const uid   = document.getElementById('new-admin-user').value.trim();
+  const pw    = document.getElementById('new-admin-pass').value;
+  const email = document.getElementById('new-admin-email').value.trim();
+  if (!uid || !pw || !email) return toast('User ID, password, and email are all required', 'error');
 
   showLoading('Adding admin...');
   try {
-    const res = await apiCall({ action: 'addAdmin', newUserId: uid, newPassword: pw });
+    const res = await apiCall({ action: 'addAdmin', newUserId: uid, newPassword: pw, newEmail: email });
     hideLoading();
     if (res.success) {
       document.getElementById('new-admin-user').value = '';
@@ -1585,6 +1687,151 @@ async function removeAdmin(uid) {
       loadAuditLog();
     } else {
       toast(res.message || 'Error', 'error');
+    }
+  } catch (e) {
+    hideLoading();
+    toast('Connection error', 'error');
+  }
+}
+
+
+// ─── FORGOT PASSWORD ──────────────────────────────────────
+let otpUserId = '';
+
+function showForgotPassword() {
+  document.getElementById('otp-userid').value = '';
+  document.getElementById('otp-email').value = '';
+  document.getElementById('otp-error1').style.display = 'none';
+  openModal('modal-forgot-step1');
+}
+
+async function sendOtp() {
+  const userId = document.getElementById('otp-userid').value.trim();
+  const email  = document.getElementById('otp-email').value.trim();
+  const errEl  = document.getElementById('otp-error1');
+  errEl.style.display = 'none';
+
+  if (!userId || !email) {
+    errEl.textContent = 'Both fields are required.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  showLoading('Sending OTP...');
+  try {
+    const res = await fetch(
+      window.APP_CONFIG.APPS_SCRIPT_URL + '?data=' + encodeURIComponent(JSON.stringify({ action: 'requestOtp', userId, email })),
+      { redirect: 'follow' }
+    );
+    const data = await res.json();
+    hideLoading();
+    if (data.success) {
+      otpUserId = userId;
+      closeModal('modal-forgot-step1');
+      document.getElementById('otp-code').value = '';
+      document.getElementById('otp-newpass').value = '';
+      document.getElementById('otp-confirmpass').value = '';
+      document.getElementById('otp-error2').style.display = 'none';
+      openModal('modal-forgot-step2');
+      toast('OTP sent! Check your email.');
+    } else {
+      errEl.textContent = data.message || 'Failed to send OTP';
+      errEl.style.display = 'block';
+    }
+  } catch (e) {
+    hideLoading();
+    errEl.textContent = 'Connection error.';
+    errEl.style.display = 'block';
+  }
+}
+
+async function submitPasswordReset() {
+  const otp         = document.getElementById('otp-code').value.trim();
+  const newPassword = document.getElementById('otp-newpass').value;
+  const confirm     = document.getElementById('otp-confirmpass').value;
+  const errEl       = document.getElementById('otp-error2');
+  errEl.style.display = 'none';
+
+  if (!otp || !newPassword || !confirm) {
+    errEl.textContent = 'All fields are required.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (newPassword !== confirm) {
+    errEl.textContent = 'Passwords do not match.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (newPassword.length < 6) {
+    errEl.textContent = 'Password must be at least 6 characters.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  showLoading('Resetting password...');
+  try {
+    // Step 1: verify OTP
+    const v = await fetch(
+      window.APP_CONFIG.APPS_SCRIPT_URL + '?data=' + encodeURIComponent(JSON.stringify({ action: 'verifyOtp', userId: otpUserId, otp })),
+      { redirect: 'follow' }
+    );
+    const vData = await v.json();
+    if (!vData.success) {
+      hideLoading();
+      errEl.textContent = vData.message || 'Invalid OTP';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    // Step 2: reset password
+    const r = await fetch(
+      window.APP_CONFIG.APPS_SCRIPT_URL + '?data=' + encodeURIComponent(JSON.stringify({ action: 'resetPassword', userId: otpUserId, otp, newPassword })),
+      { redirect: 'follow' }
+    );
+    const rData = await r.json();
+    hideLoading();
+    if (rData.success) {
+      closeModal('modal-forgot-step2');
+      toast('Password reset successfully! Please log in.');
+      otpUserId = '';
+    } else {
+      errEl.textContent = rData.message || 'Reset failed';
+      errEl.style.display = 'block';
+    }
+  } catch (e) {
+    hideLoading();
+    errEl.textContent = 'Connection error.';
+    errEl.style.display = 'block';
+  }
+}
+
+// ─── CHANGE PASSWORD (logged in) ──────────────────────────
+function openChangePasswordModal() {
+  document.getElementById('cp-current').value = '';
+  document.getElementById('cp-new').value = '';
+  document.getElementById('cp-confirm').value = '';
+  openModal('modal-change-password');
+}
+
+async function submitChangePassword() {
+  const currentPassword = document.getElementById('cp-current').value;
+  const newPassword     = document.getElementById('cp-new').value;
+  const confirm         = document.getElementById('cp-confirm').value;
+
+  if (!currentPassword || !newPassword || !confirm) return toast('All fields required', 'error');
+  if (newPassword !== confirm) return toast('Passwords do not match', 'error');
+  if (newPassword.length < 6)  return toast('Password must be at least 6 characters', 'error');
+
+  showLoading('Updating password...');
+  try {
+    const res = await apiCall({ action: 'changePassword', currentPassword, newPassword });
+    hideLoading();
+    if (res.success) {
+      closeModal('modal-change-password');
+      toast('Password updated! Please log in again.');
+      setTimeout(doLogout, 1500);
+    } else {
+      toast(res.message || 'Failed to update password', 'error');
     }
   } catch (e) {
     hideLoading();
