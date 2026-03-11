@@ -5,686 +5,194 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TradeDesk Portal</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
   :root {
-    --bg: #0a0a0f;
-    --surface: #111118;
-    --surface2: #1a1a24;
-    --border: #2a2a3a;
-    --accent: #00d4aa;
-    --accent2: #ff6b35;
-    --accent3: #7c3aed;
-    --text: #e8e8f0;
-    --text-dim: #6b6b80;
-    --text-muted: #3a3a50;
-    --green: #00d4aa;
-    --red: #ff4757;
-    --yellow: #ffa502;
-    --mono: 'IBM Plex Mono', monospace;
-    --sans: 'IBM Plex Sans', sans-serif;
-    --display: 'Bebas Neue', cursive;
+    --bg:#0a0a0f; --surface:#111118; --surface2:#1a1a24; --border:#2a2a3a;
+    --accent:#00d4aa; --accent2:#ff6b35; --accent3:#7c3aed;
+    --text:#e8e8f0; --text-dim:#6b6b80; --text-muted:#3a3a50;
+    --green:#00d4aa; --red:#ff4757; --yellow:#ffa502;
+    --mono:'IBM Plex Mono',monospace; --sans:'IBM Plex Sans',sans-serif; --display:'Bebas Neue',cursive;
   }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--sans);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  /* ─── LOGIN SCREEN ─── */
-  #login-screen {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--bg);
-    position: relative;
-  }
-
-  #login-screen::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background:
-      radial-gradient(ellipse 60% 40% at 30% 20%, rgba(0,212,170,0.06) 0%, transparent 60%),
-      radial-gradient(ellipse 50% 50% at 80% 80%, rgba(124,58,237,0.05) 0%, transparent 60%);
-    pointer-events: none;
-  }
-
-  .grid-bg {
-    position: fixed;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(0,212,170,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,212,170,0.03) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  .login-card {
-    position: relative;
-    z-index: 1;
-    width: 420px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    padding: 48px 40px;
-  }
-
-  .login-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, var(--accent), var(--accent3));
-  }
-
-  .login-logo {
-    font-family: var(--display);
-    font-size: 42px;
-    letter-spacing: 3px;
-    color: var(--text);
-    margin-bottom: 4px;
-  }
-
-  .login-logo span { color: var(--accent); }
-
-  .login-tagline {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--text-dim);
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    margin-bottom: 40px;
-  }
-
-  .field-group { margin-bottom: 20px; }
-
-  .field-label {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--text-dim);
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    margin-bottom: 8px;
-    display: block;
-  }
-
-  .field-input {
-    width: 100%;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    color: var(--text);
-    font-family: var(--mono);
-    font-size: 14px;
-    padding: 12px 16px;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-
-  .field-input:focus { border-color: var(--accent); }
-
-  .btn-primary {
-    width: 100%;
-    background: var(--accent);
-    color: var(--bg);
-    border: none;
-    font-family: var(--mono);
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    padding: 14px;
-    cursor: pointer;
-    transition: all 0.2s;
-    margin-top: 8px;
-  }
-
-  .btn-primary:hover { background: #00f0c0; transform: translateY(-1px); }
-  .btn-primary:active { transform: translateY(0); }
-
-  .login-error {
-    background: rgba(255,71,87,0.1);
-    border: 1px solid rgba(255,71,87,0.3);
-    color: var(--red);
-    font-family: var(--mono);
-    font-size: 12px;
-    padding: 10px 14px;
-    margin-top: 16px;
-    display: none;
-  }
-
-  /* ─── MAIN PORTAL ─── */
-  #portal { display: none; min-height: 100vh; }
-
-  .topbar {
-    height: 56px;
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 28px;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-  }
-
-  .topbar-logo {
-    font-family: var(--display);
-    font-size: 24px;
-    letter-spacing: 2px;
-  }
-
-  .topbar-logo span { color: var(--accent); }
-
-  .topbar-right {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-  }
-
-  .user-badge {
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--text-dim);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .user-badge .role-pill {
-    background: rgba(0,212,170,0.1);
-    border: 1px solid rgba(0,212,170,0.3);
-    color: var(--accent);
-    font-size: 10px;
-    padding: 2px 8px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-  }
-
-  .btn-logout {
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--text-dim);
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    padding: 6px 14px;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .btn-logout:hover { border-color: var(--red); color: var(--red); }
-
-  .nav-tabs {
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    padding: 0 28px;
-    gap: 0;
-  }
-
-  .nav-tab {
-    font-family: var(--mono);
-    font-size: 12px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    padding: 14px 20px;
-    cursor: pointer;
-    color: var(--text-dim);
-    border-bottom: 2px solid transparent;
-    transition: all 0.2s;
-    background: none;
-    border-top: none;
-    border-left: none;
-    border-right: none;
-  }
-
-  .nav-tab:hover { color: var(--text); }
-  .nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-
-  .tab-content { display: none; padding: 28px; }
-  .tab-content.active { display: block; }
-
-  /* ─── SECTION HEADERS ─── */
-  .section-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 24px;
-  }
-
-  .section-title {
-    font-family: var(--display);
-    font-size: 28px;
-    letter-spacing: 2px;
-  }
-
-  /* ─── CARDS ─── */
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    padding: 24px;
-    margin-bottom: 20px;
-  }
-
-  .card-title {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--text-dim);
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .card-title::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--border);
-  }
-
-  /* ─── FORM GRID ─── */
-  .form-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 16px;
-  }
-
-  .form-field { display: flex; flex-direction: column; gap: 6px; }
-
-  .form-label {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--text-dim);
-    letter-spacing: 1px;
-    text-transform: uppercase;
-  }
-
-  .form-input, .form-select, .form-textarea {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    color: var(--text);
-    font-family: var(--mono);
-    font-size: 13px;
-    padding: 10px 14px;
-    outline: none;
-    transition: border-color 0.2s;
-    width: 100%;
-  }
-
-  .form-input:focus, .form-select:focus, .form-textarea:focus {
-    border-color: var(--accent);
-  }
-
-  .form-select option { background: var(--surface); }
-  .form-textarea { resize: vertical; min-height: 80px; }
-
-  /* ─── CAPITAL CONTROL ─── */
-  .capital-control {
-    display: flex;
-    align-items: center;
-    gap: 0;
-  }
-
-  .capital-btn {
-    width: 36px;
-    height: 38px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    color: var(--text);
-    font-size: 18px;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .capital-btn:hover { background: var(--accent); color: var(--bg); border-color: var(--accent); }
-
-  .capital-input {
-    flex: 1;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-left: none;
-    border-right: none;
-    color: var(--text);
-    font-family: var(--mono);
-    font-size: 13px;
-    padding: 10px 14px;
-    outline: none;
-    text-align: center;
-    transition: border-color 0.2s;
-  }
-
-  .capital-input:focus { border-color: var(--accent); }
-
-  /* ─── BUTTONS ─── */
-  .btn {
-    font-family: var(--mono);
-    font-size: 12px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    padding: 10px 20px;
-    cursor: pointer;
-    border: none;
-    transition: all 0.2s;
-  }
-
-  .btn-accent { background: var(--accent); color: var(--bg); font-weight: 600; }
-  .btn-accent:hover { background: #00f0c0; }
-
-  .btn-outline {
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--text-dim);
-  }
-  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
-
-  .btn-danger { background: var(--red); color: #fff; }
-  .btn-danger:hover { background: #ff6070; }
-
-  .btn-warn { background: var(--yellow); color: var(--bg); font-weight: 600; }
-  .btn-warn:hover { background: #ffb520; }
-
-  .btn-sm { padding: 6px 12px; font-size: 11px; }
-
-  /* ─── TABLE ─── */
-  .table-wrap { overflow-x: auto; }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-family: var(--mono);
-    font-size: 12px;
-  }
-
-  th {
-    background: var(--surface2);
-    color: var(--text-dim);
-    font-size: 10px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    padding: 10px 14px;
-    text-align: left;
-    border-bottom: 1px solid var(--border);
-    white-space: nowrap;
-  }
-
-  td {
-    padding: 12px 14px;
-    border-bottom: 1px solid rgba(42,42,58,0.5);
-    vertical-align: middle;
-    color: var(--text);
-  }
-
-  tr:hover td { background: rgba(0,212,170,0.03); }
-
-  .tag {
-    display: inline-block;
-    padding: 2px 8px;
-    font-size: 10px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    border: 1px solid;
-  }
-
-  .tag-fo { background: rgba(124,58,237,0.1); border-color: rgba(124,58,237,0.4); color: #a78bfa; }
-  .tag-foc { background: rgba(255,107,53,0.1); border-color: rgba(255,107,53,0.4); color: #fb923c; }
-
-  .pl-pos { color: var(--green); font-weight: 600; }
-  .pl-neg { color: var(--red); font-weight: 600; }
-
-  /* ─── STATS BAR ─── */
-  .stats-bar {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 1px;
-    background: var(--border);
-    border: 1px solid var(--border);
-    margin-bottom: 24px;
-  }
-
-  .stat-cell {
-    background: var(--surface);
-    padding: 18px 20px;
-  }
-
-  .stat-label {
-    font-family: var(--mono);
-    font-size: 10px;
-    color: var(--text-dim);
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    margin-bottom: 6px;
-  }
-
-  .stat-value {
-    font-family: var(--display);
-    font-size: 26px;
-    letter-spacing: 1px;
-    color: var(--text);
-  }
-
-  .stat-value.pos { color: var(--green); }
-  .stat-value.neg { color: var(--red); }
-
-  /* ─── HIGHLIGHT ROW ─── */
-  .row-highlight td { background: rgba(255,165,2,0.06) !important; }
-  .row-disbursed td { background: rgba(0,212,170,0.04) !important; opacity: 0.6; }
-
-  /* ─── AUDIT LOG ─── */
-  .audit-entry {
-    display: flex;
-    gap: 14px;
-    padding: 14px 0;
-    border-bottom: 1px solid var(--border);
-    font-size: 12px;
-  }
-
-  .audit-time {
-    font-family: var(--mono);
-    color: var(--text-dim);
-    font-size: 11px;
-    white-space: nowrap;
-    min-width: 140px;
-  }
-
-  .audit-user {
-    color: var(--accent);
-    font-family: var(--mono);
-    font-weight: 500;
-    min-width: 80px;
-  }
-
-  .audit-msg { color: var(--text); flex: 1; font-family: var(--mono); }
-
-  /* ─── MODAL ─── */
-  .modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.8);
-    z-index: 200;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    backdrop-filter: blur(4px);
-  }
-
-  .modal-overlay.open { display: flex; }
-
-  .modal {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    width: 580px;
-    max-width: 95vw;
-    max-height: 90vh;
-    overflow-y: auto;
-    position: relative;
-  }
-
-  .modal::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, var(--accent), var(--accent3));
-  }
-
-  .modal-header {
-    padding: 20px 24px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .modal-title {
-    font-family: var(--display);
-    font-size: 22px;
-    letter-spacing: 2px;
-  }
-
-  .modal-close {
-    background: none;
-    border: none;
-    color: var(--text-dim);
-    font-size: 20px;
-    cursor: pointer;
-    line-height: 1;
-    transition: color 0.2s;
-  }
-
-  .modal-close:hover { color: var(--red); }
-
-  .modal-body { padding: 24px; }
-
-  .modal-footer {
-    padding: 16px 24px;
-    border-top: 1px solid var(--border);
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-  }
-
-  /* ─── TOAST ─── */
-  .toast-container {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    z-index: 300;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .toast {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-left: 3px solid var(--accent);
-    padding: 12px 18px;
-    font-family: var(--mono);
-    font-size: 12px;
-    min-width: 240px;
-    animation: slideIn 0.3s ease;
-  }
-
-  .toast.error { border-left-color: var(--red); }
-  .toast.warn { border-left-color: var(--yellow); }
-
-  @keyframes slideIn {
-    from { transform: translateX(100%); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
-  }
-
-  /* ─── LOADER ─── */
-  .loader {
-    display: inline-block;
-    width: 14px;
-    height: 14px;
-    border: 2px solid var(--border);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 0.6s linear infinite;
-    margin-right: 8px;
-    vertical-align: middle;
-  }
-
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  .loading-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.5);
-    z-index: 500;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    backdrop-filter: blur(2px);
-  }
-
-  .loading-overlay.open { display: flex; }
-
-  .loading-box {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    padding: 24px 32px;
-    font-family: var(--mono);
-    font-size: 13px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  /* ─── CONFIG NOTICE ─── */
-  .config-notice {
-    background: rgba(255,107,53,0.08);
-    border: 1px solid rgba(255,107,53,0.3);
-    color: #fb923c;
-    font-family: var(--mono);
-    font-size: 12px;
-    padding: 14px 18px;
-    margin-bottom: 20px;
-    line-height: 1.7;
-  }
-
-  .config-notice strong { color: var(--accent2); }
-
-  /* ─── ADMIN MGMT ─── */
-  .master-only { display: none; }
-
-  /* ─── STATUS PILLS ─── */
-  .status-active { color: var(--green); }
-  .status-due { color: var(--yellow); }
-  .status-overdue { color: var(--red); }
-  .status-disbursed { color: var(--text-dim); }
-
-  /* ─── RESPONSIVE ─── */
-  @media (max-width: 700px) {
-    .topbar { padding: 0 14px; }
-    .nav-tabs { padding: 0 14px; }
-    .tab-content { padding: 14px; }
-    .form-grid { grid-template-columns: 1fr; }
-    .stats-bar { grid-template-columns: 1fr 1fr; }
-    .login-card { width: 95vw; padding: 32px 24px; }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden;}
+
+  /* GRID BG */
+  .grid-bg{position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,170,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,170,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+
+  /* LOGIN */
+  #login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;}
+  #login-screen::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 40% at 30% 20%,rgba(0,212,170,0.06) 0%,transparent 60%),radial-gradient(ellipse 50% 50% at 80% 80%,rgba(124,58,237,0.05) 0%,transparent 60%);pointer-events:none;}
+  .login-card{position:relative;z-index:1;width:420px;background:var(--surface);border:1px solid var(--border);padding:48px 40px;}
+  .login-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent3));}
+  .login-logo{font-family:var(--display);font-size:42px;letter-spacing:3px;margin-bottom:4px;}
+  .login-logo span{color:var(--accent);}
+  .login-tagline{font-family:var(--mono);font-size:11px;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase;margin-bottom:40px;}
+  .field-group{margin-bottom:20px;}
+  .field-label{font-family:var(--mono);font-size:11px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;display:block;}
+  .field-input{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:14px;padding:12px 16px;outline:none;transition:border-color .2s;}
+  .field-input:focus{border-color:var(--accent);}
+  .btn-primary{width:100%;background:var(--accent);color:var(--bg);border:none;font-family:var(--mono);font-size:13px;font-weight:600;letter-spacing:2px;text-transform:uppercase;padding:14px;cursor:pointer;transition:all .2s;margin-top:8px;}
+  .btn-primary:hover{background:#00f0c0;}
+  .login-error{background:rgba(255,71,87,0.1);border:1px solid rgba(255,71,87,0.3);color:var(--red);font-family:var(--mono);font-size:12px;padding:10px 14px;margin-top:16px;display:none;}
+
+  /* TOPBAR */
+  #portal{display:none;min-height:100vh;}
+  .topbar{height:56px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:100;}
+  .topbar-logo{font-family:var(--display);font-size:24px;letter-spacing:2px;}
+  .topbar-logo span{color:var(--accent);}
+  .topbar-right{display:flex;align-items:center;gap:12px;}
+  .user-badge{font-family:var(--mono);font-size:12px;color:var(--text-dim);display:flex;align-items:center;gap:8px;}
+  .role-pill{background:rgba(0,212,170,0.1);border:1px solid rgba(0,212,170,0.3);color:var(--accent);font-size:10px;padding:2px 8px;letter-spacing:1px;text-transform:uppercase;}
+
+  /* NAV */
+  .nav-tabs{background:var(--surface);border-bottom:1px solid var(--border);display:flex;padding:0 28px;gap:0;overflow-x:auto;}
+  .nav-tab{font-family:var(--mono);font-size:12px;letter-spacing:1px;text-transform:uppercase;padding:14px 20px;cursor:pointer;color:var(--text-dim);border-bottom:2px solid transparent;transition:all .2s;background:none;border-top:none;border-left:none;border-right:none;white-space:nowrap;}
+  .nav-tab:hover{color:var(--text);}
+  .nav-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+  .tab-content{display:none;padding:28px;}
+  .tab-content.active{display:block;}
+
+  /* BUTTONS */
+  .btn{font-family:var(--mono);font-size:12px;letter-spacing:1px;text-transform:uppercase;padding:10px 20px;cursor:pointer;border:none;transition:all .2s;}
+  .btn-accent{background:var(--accent);color:var(--bg);font-weight:600;}
+  .btn-accent:hover{background:#00f0c0;}
+  .btn-outline{background:transparent;border:1px solid var(--border);color:var(--text-dim);}
+  .btn-outline:hover{border-color:var(--accent);color:var(--accent);}
+  .btn-danger{background:var(--red);color:#fff;}
+  .btn-danger:hover{background:#ff6070;}
+  .btn-warn{background:var(--yellow);color:var(--bg);font-weight:600;}
+  .btn-warn:hover{background:#ffb520;}
+  .btn-green{background:var(--green);color:var(--bg);font-weight:600;}
+  .btn-green:hover{background:#00f0c0;}
+  .btn-sm{padding:6px 12px;font-size:11px;}
+  .btn-logout{background:transparent;border:1px solid var(--border);color:var(--text-dim);font-family:var(--mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;padding:6px 14px;cursor:pointer;transition:all .2s;}
+  .btn-logout:hover{border-color:var(--red);color:var(--red);}
+
+  /* CARDS */
+  .card{background:var(--surface);border:1px solid var(--border);padding:24px;margin-bottom:20px;}
+  .card-title{font-family:var(--mono);font-size:11px;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase;margin-bottom:20px;display:flex;align-items:center;gap:10px;}
+  .card-title::after{content:'';flex:1;height:1px;background:var(--border);}
+  .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;}
+  .section-title{font-family:var(--display);font-size:28px;letter-spacing:2px;}
+
+  /* STATS BAR */
+  .stats-bar{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);margin-bottom:24px;}
+  .stat-cell{background:var(--surface);padding:18px 20px;}
+  .stat-label{font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;}
+  .stat-value{font-family:var(--display);font-size:26px;letter-spacing:1px;color:var(--text);}
+  .stat-value.pos{color:var(--green);}
+  .stat-value.neg{color:var(--red);}
+
+  /* BALANCE CARDS */
+  .balance-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;}
+  .balance-card{background:var(--surface);border:1px solid var(--border);padding:24px;position:relative;overflow:hidden;}
+  .balance-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+  .balance-card.capital::before{background:var(--accent3);}
+  .balance-card.portfolio::before{background:var(--accent);}
+  .balance-card-label{font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;}
+  .balance-card-value{font-family:var(--display);font-size:38px;letter-spacing:2px;margin-bottom:16px;}
+  .balance-card.capital .balance-card-value{color:#a78bfa;}
+  .balance-card.portfolio .balance-card-value{color:var(--accent);}
+  .balance-card-actions{display:flex;gap:8px;flex-wrap:wrap;}
+
+  /* FORM */
+  .form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;}
+  .form-field{display:flex;flex-direction:column;gap:6px;}
+  .form-label{font-family:var(--mono);font-size:11px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;}
+  .form-input,.form-select,.form-textarea{background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:13px;padding:10px 14px;outline:none;transition:border-color .2s;width:100%;}
+  .form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--accent);}
+  .form-select option{background:var(--surface);}
+  .form-textarea{resize:vertical;min-height:80px;}
+
+  /* TABLE */
+  .table-wrap{overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px;}
+  th{background:var(--surface2);color:var(--text-dim);font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
+  td{padding:12px 14px;border-bottom:1px solid rgba(42,42,58,0.5);vertical-align:middle;color:var(--text);}
+  tr:hover td{background:rgba(0,212,170,0.03);}
+  .tag{display:inline-block;padding:2px 8px;font-size:10px;letter-spacing:1px;text-transform:uppercase;border:1px solid;}
+  .tag-fo{background:rgba(124,58,237,0.1);border-color:rgba(124,58,237,0.4);color:#a78bfa;}
+  .tag-foc{background:rgba(255,107,53,0.1);border-color:rgba(255,107,53,0.4);color:#fb923c;}
+  .tag-open{background:rgba(255,165,2,0.1);border-color:rgba(255,165,2,0.4);color:var(--yellow);}
+  .tag-closed{background:rgba(0,212,170,0.1);border-color:rgba(0,212,170,0.4);color:var(--green);}
+  .tag-transfer{background:rgba(124,58,237,0.1);border-color:rgba(124,58,237,0.4);color:#a78bfa;}
+  .pl-pos{color:var(--green);font-weight:600;}
+  .pl-neg{color:var(--red);font-weight:600;}
+
+  /* SUB TABS */
+  .sub-tabs{display:flex;gap:8px;margin-bottom:16px;}
+  .sub-tab{font-family:var(--mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;padding:7px 14px;cursor:pointer;background:transparent;border:1px solid var(--border);color:var(--text-dim);transition:all .2s;}
+  .sub-tab.active{border-color:var(--accent);color:var(--accent);}
+
+  /* AUDIT */
+  .audit-entry{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid var(--border);font-size:12px;}
+  .audit-time{font-family:var(--mono);color:var(--text-dim);font-size:11px;white-space:nowrap;min-width:140px;}
+  .audit-user{color:var(--accent);font-family:var(--mono);font-weight:500;min-width:80px;}
+  .audit-msg{color:var(--text);flex:1;font-family:var(--mono);}
+
+  /* MODAL */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:200;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+  .modal-overlay.open{display:flex;}
+  .modal{background:var(--surface);border:1px solid var(--border);width:580px;max-width:95vw;max-height:90vh;overflow-y:auto;position:relative;}
+  .modal::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent3));}
+  .modal-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+  .modal-title{font-family:var(--display);font-size:22px;letter-spacing:2px;}
+  .modal-close{background:none;border:none;color:var(--text-dim);font-size:20px;cursor:pointer;transition:color .2s;}
+  .modal-close:hover{color:var(--red);}
+  .modal-body{padding:24px;}
+  .modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;}
+
+  /* TOAST */
+  .toast-container{position:fixed;bottom:24px;right:24px;z-index:300;display:flex;flex-direction:column;gap:8px;}
+  .toast{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);padding:12px 18px;font-family:var(--mono);font-size:12px;min-width:240px;animation:slideIn .3s ease;}
+  .toast.error{border-left-color:var(--red);}
+  .toast.warn{border-left-color:var(--yellow);}
+  @keyframes slideIn{from{transform:translateX(100%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+
+  /* LOADER */
+  .loader{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;margin-right:8px;vertical-align:middle;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .loading-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:500;display:none;align-items:center;justify-content:center;backdrop-filter:blur(2px);}
+  .loading-overlay.open{display:flex;}
+  .loading-box{background:var(--surface);border:1px solid var(--border);padding:24px 32px;font-family:var(--mono);font-size:13px;display:flex;align-items:center;gap:12px;}
+
+  /* CHARTS */
+  .chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;}
+  .chart-card{background:var(--surface);border:1px solid var(--border);padding:24px;}
+  .chart-card.full{grid-column:1/-1;}
+  .chart-title{font-family:var(--mono);font-size:11px;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase;margin-bottom:16px;}
+  .chart-wrap{position:relative;height:220px;}
+
+  /* STATUS */
+  .status-active{color:var(--green);}
+  .status-due{color:var(--yellow);}
+  .status-overdue{color:var(--red);}
+  .master-only{display:none;}
+
+  /* TRANSFER INDICATOR */
+  .transfer-row td{background:rgba(124,58,237,0.04) !important;}
+  .row-disbursed td{opacity:0.6;}
+
+  /* CAPITAL CONTROL */
+  .capital-control{display:flex;align-items:center;}
+  .capital-btn{width:36px;height:38px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:18px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;}
+  .capital-btn:hover{background:var(--accent);color:var(--bg);border-color:var(--accent);}
+  .capital-input{flex:1;background:var(--bg);border:1px solid var(--border);border-left:none;border-right:none;color:var(--text);font-family:var(--mono);font-size:13px;padding:10px 14px;outline:none;text-align:center;}
+  .capital-input:focus{border-color:var(--accent);}
+
+  @media(max-width:700px){
+    .topbar,.nav-tabs,.tab-content{padding-left:14px;padding-right:14px;}
+    .form-grid{grid-template-columns:1fr;}
+    .stats-bar,.balance-grid,.chart-grid{grid-template-columns:1fr;}
+    .login-card{width:95vw;padding:32px 24px;}
   }
 </style>
 </head>
 <body>
-
 <div class="grid-bg"></div>
 
-<!-- ─── LOGIN ─── -->
+<!-- LOGIN -->
 <div id="login-screen">
   <div class="login-card">
     <div class="login-logo">TRADE<span>DESK</span></div>
@@ -705,10 +213,8 @@
   </div>
 </div>
 
-<!-- ─── PORTAL ─── -->
+<!-- PORTAL -->
 <div id="portal">
-
-  <!-- Topbar -->
   <div class="topbar">
     <div class="topbar-logo">TRADE<span>DESK</span></div>
     <div class="topbar-right">
@@ -716,170 +222,169 @@
         <span id="current-user-display">—</span>
         <span class="role-pill" id="role-display">ADMIN</span>
       </div>
-      <button class="btn-logout" onclick="openChangePasswordModal()" style="border-color:var(--border);margin-right:4px">CHANGE PWD</button>
+      <button class="btn-logout" onclick="openChangePasswordModal()">CHANGE PWD</button>
       <button class="btn-logout" onclick="doLogout()">LOGOUT</button>
     </div>
   </div>
 
-  <!-- Nav -->
   <div class="nav-tabs">
     <button class="nav-tab active" data-tab="tab-trading" onclick="switchTab(this)">F&amp;O Trading</button>
-    <button class="nav-tab" data-tab="tab-customers" onclick="switchTab(this)">Customer Details</button>
+    <button class="nav-tab" data-tab="tab-capital" onclick="switchTab(this)">Capital</button>
+    <button class="nav-tab" data-tab="tab-analytics" onclick="switchTab(this)">Analytics</button>
+    <button class="nav-tab" data-tab="tab-customers" onclick="switchTab(this)">Customers</button>
     <button class="nav-tab" data-tab="tab-audit" onclick="switchTab(this)">Audit Log</button>
-    <button class="nav-tab master-only" id="tab-btn-admin" data-tab="tab-admin" onclick="switchTab(this)">Admin Management</button>
+    <button class="nav-tab master-only" id="tab-btn-admin" data-tab="tab-admin" onclick="switchTab(this)">Admin Mgmt</button>
   </div>
 
-  <!-- ─── TAB: TRADING ─── -->
+  <!-- ═══ TAB: TRADING ═══ -->
   <div class="tab-content active" id="tab-trading">
     <div class="section-header">
       <div class="section-title">F&amp;O TRADING LOG</div>
       <button class="btn btn-accent" onclick="openNewEntryModal()">+ NEW ENTRY</button>
     </div>
-
-    <div id="config-notice-trading" class="config-notice" style="display:none">
-      ⚠ <strong>Setup Required:</strong> Configure your Google Apps Script URL in <code>config.js</code> to connect this portal to your Google Sheets.
-      See <code>README.md</code> for setup instructions.
+    <div class="stats-bar">
+      <div class="stat-cell"><div class="stat-label">Open Entries</div><div class="stat-value" id="stat-open">—</div></div>
+      <div class="stat-cell"><div class="stat-label">Today Entries</div><div class="stat-value" id="stat-today">—</div></div>
+      <div class="stat-cell"><div class="stat-label">Total Deployed</div><div class="stat-value" id="stat-deployed">—</div></div>
+      <div class="stat-cell"><div class="stat-label">Net P/L (All)</div><div class="stat-value" id="stat-pl">—</div></div>
     </div>
-
-    <!-- Stats -->
-    <div class="stats-bar" id="trading-stats">
-      <div class="stat-cell">
-        <div class="stat-label">Today's Entries</div>
-        <div class="stat-value" id="stat-entries">—</div>
-      </div>
-      <div class="stat-cell">
-        <div class="stat-label">Total Entry Cap</div>
-        <div class="stat-value" id="stat-entry-cap">—</div>
-      </div>
-      <div class="stat-cell">
-        <div class="stat-label">Total Exit Cap</div>
-        <div class="stat-value" id="stat-exit-cap">—</div>
-      </div>
-      <div class="stat-cell">
-        <div class="stat-label">Net P/L Today</div>
-        <div class="stat-value" id="stat-pl">—</div>
-      </div>
+    <div class="sub-tabs">
+      <button class="sub-tab active" id="sub-fo" onclick="switchSubTab('fo')">F&amp;O Stocks</button>
+      <button class="sub-tab" id="sub-foc" onclick="switchSubTab('foc')">F&amp;O Commodities</button>
     </div>
-
-    <!-- Sub-tabs for FO vs FOC -->
-    <div style="display:flex;gap:8px;margin-bottom:16px">
-      <button class="btn btn-outline btn-sm active-sub" id="sub-fo" onclick="switchSubTab('fo')">F&amp;O STOCKS</button>
-      <button class="btn btn-outline btn-sm" id="sub-foc" onclick="switchSubTab('foc')">F&amp;O COMMODITIES</button>
-    </div>
-
-    <div class="card">
-      <div class="card-title">F&amp;O Stocks Records</div>
+    <div class="card" id="fo-card">
+      <div class="card-title">F&amp;O Stocks</div>
       <div class="table-wrap">
-        <table id="fo-table">
-          <thead>
-            <tr>
-              <th>Date &amp; Time</th>
-              <th>Entry Capital</th>
-              <th>Exit Capital</th>
-              <th>P/L</th>
-              <th>Type</th>
-              <th>Logged By</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="fo-tbody"><tr><td colspan="7" style="text-align:center;color:var(--text-dim);padding:30px">Loading...</td></tr></tbody>
-        </table>
+        <table><thead><tr>
+          <th>Date &amp; Time</th><th>Entry Capital</th><th>Exit Capital</th><th>P/L</th><th>Status</th><th>Type</th><th>By</th><th>Actions</th>
+        </tr></thead>
+        <tbody id="fo-tbody"><tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:30px">Loading...</td></tr></tbody></table>
       </div>
     </div>
-
-    <div class="card" id="foc-section" style="display:none">
-      <div class="card-title">F&amp;O Commodities Records</div>
+    <div class="card" id="foc-card" style="display:none">
+      <div class="card-title">F&amp;O Commodities</div>
       <div class="table-wrap">
-        <table id="foc-table">
-          <thead>
-            <tr>
-              <th>Date &amp; Time</th>
-              <th>Entry Capital</th>
-              <th>Exit Capital</th>
-              <th>P/L</th>
-              <th>Type</th>
-              <th>Logged By</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="foc-tbody"><tr><td colspan="7" style="text-align:center;color:var(--text-dim);padding:30px">Loading...</td></tr></tbody>
-        </table>
+        <table><thead><tr>
+          <th>Date &amp; Time</th><th>Entry Capital</th><th>Exit Capital</th><th>P/L</th><th>Status</th><th>Type</th><th>By</th><th>Actions</th>
+        </tr></thead>
+        <tbody id="foc-tbody"><tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:30px">Loading...</td></tr></tbody></table>
       </div>
     </div>
   </div>
 
-  <!-- ─── TAB: CUSTOMERS ─── -->
+  <!-- ═══ TAB: CAPITAL ═══ -->
+  <div class="tab-content" id="tab-capital">
+    <div class="section-header">
+      <div class="section-title">CAPITAL MANAGEMENT</div>
+    </div>
+    <div class="balance-grid">
+      <div class="balance-card capital">
+        <div class="balance-card-label">Capital Balance</div>
+        <div class="balance-card-value" id="bal-capital">₹ —</div>
+        <div class="balance-card-actions">
+          <button class="btn btn-accent btn-sm" onclick="openCapitalModal('deposit')">+ DEPOSIT</button>
+          <button class="btn btn-outline btn-sm" onclick="openCapitalModal('withdraw')">− WITHDRAW</button>
+          <button class="btn btn-sm" style="background:rgba(124,58,237,0.2);border:1px solid rgba(124,58,237,0.4);color:#a78bfa" onclick="openTransferModal('capital-to-portfolio')">→ TO PORTFOLIO</button>
+        </div>
+      </div>
+      <div class="balance-card portfolio">
+        <div class="balance-card-label">Trading Portfolio</div>
+        <div class="balance-card-value" id="bal-portfolio">₹ —</div>
+        <div class="balance-card-actions">
+          <button class="btn btn-accent btn-sm" onclick="openCapitalModal('portfolio-deposit')">+ ADD FUNDS</button>
+          <button class="btn btn-outline btn-sm" onclick="openCapitalModal('portfolio-withdraw')">− WITHDRAW</button>
+          <button class="btn btn-sm" style="background:rgba(124,58,237,0.2);border:1px solid rgba(124,58,237,0.4);color:#a78bfa" onclick="openTransferModal('portfolio-to-capital')">→ TO CAPITAL</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Transaction History</div>
+      <div class="table-wrap">
+        <table><thead><tr>
+          <th>Date &amp; Time</th><th>Type</th><th>Amount</th><th>Balance</th><th>Note</th><th>By</th>
+        </tr></thead>
+        <tbody id="capital-tbody"><tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:30px">Loading...</td></tr></tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ TAB: ANALYTICS ═══ -->
+  <div class="tab-content" id="tab-analytics">
+    <div class="section-header">
+      <div class="section-title">ANALYTICS</div>
+      <select class="form-select" id="analytics-range" onchange="renderCharts()" style="width:auto;padding:8px 14px">
+        <option value="7">Last 7 days</option>
+        <option value="30" selected>Last 30 days</option>
+        <option value="90">Last 90 days</option>
+        <option value="365">Last 1 year</option>
+        <option value="all">All time</option>
+      </select>
+    </div>
+    <div class="stats-bar" id="analytics-stats">
+      <div class="stat-cell"><div class="stat-label">Total Capital</div><div class="stat-value" id="an-total">—</div></div>
+      <div class="stat-cell"><div class="stat-label">Total P/L</div><div class="stat-value" id="an-pl">—</div></div>
+      <div class="stat-cell"><div class="stat-label">Win Rate</div><div class="stat-value" id="an-win">—</div></div>
+      <div class="stat-cell"><div class="stat-label">Best Day</div><div class="stat-value pos" id="an-best">—</div></div>
+      <div class="stat-cell"><div class="stat-label">Worst Day</div><div class="stat-value neg" id="an-worst">—</div></div>
+    </div>
+    <div class="chart-grid">
+      <div class="chart-card full">
+        <div class="chart-title">Daily P/L — Bar Chart</div>
+        <div class="chart-wrap"><canvas id="chart-daily-pl"></canvas></div>
+      </div>
+      <div class="chart-card full">
+        <div class="chart-title">Cumulative P/L — Over Time</div>
+        <div class="chart-wrap"><canvas id="chart-cumulative"></canvas></div>
+      </div>
+      <div class="chart-card full">
+        <div class="chart-title">Total Capital Over Time (Portfolio + Capital Balance)</div>
+        <div class="chart-wrap"><canvas id="chart-capital"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ TAB: CUSTOMERS ═══ -->
   <div class="tab-content" id="tab-customers">
     <div class="section-header">
       <div class="section-title">CUSTOMER DETAILS</div>
       <button class="btn btn-accent" onclick="openNewCustomerModal()">+ ADD CUSTOMER</button>
     </div>
-
-    <!-- Sub-tabs -->
-    <div style="display:flex;gap:8px;margin-bottom:16px">
-      <button class="btn btn-outline btn-sm" id="cust-tab-active" onclick="switchCustTab('active')" style="border-color:var(--accent);color:var(--accent)">ACTIVE</button>
-      <button class="btn btn-outline btn-sm" id="cust-tab-disbursed" onclick="switchCustTab('disbursed')">DISBURSED</button>
+    <div class="sub-tabs">
+      <button class="sub-tab active" id="cust-tab-active" onclick="switchCustTab('active')">Active</button>
+      <button class="sub-tab" id="cust-tab-disbursed" onclick="switchCustTab('disbursed')">Disbursed</button>
     </div>
-
     <div class="card" id="cust-active-section">
-      <div class="card-title">Active Customer Records</div>
+      <div class="card-title">Active Records</div>
       <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Payment Date</th>
-              <th>Principal</th>
-              <th>Return %</th>
-              <th>Promised Return</th>
-              <th>Due Date</th>
-              <th>Status</th>
-              <th>Remarks</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="cust-active-tbody"><tr><td colspan="9" style="text-align:center;color:var(--text-dim);padding:30px">Loading...</td></tr></tbody>
-        </table>
+        <table><thead><tr>
+          <th>Name</th><th>Payment Date</th><th>Principal</th><th>Return %</th><th>Promised Return</th><th>Due Date</th><th>Status</th><th>Remarks</th><th>Actions</th>
+        </tr></thead>
+        <tbody id="cust-active-tbody"><tr><td colspan="9" style="text-align:center;color:var(--text-dim);padding:30px">Loading...</td></tr></tbody></table>
       </div>
     </div>
-
     <div class="card" id="cust-disbursed-section" style="display:none">
       <div class="card-title">Disbursed Records</div>
       <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Payment Date</th>
-              <th>Principal</th>
-              <th>Return %</th>
-              <th>Promised Return</th>
-              <th>Due Date</th>
-              <th>Disbursed On</th>
-              <th>Early/Late</th>
-              <th>Remarks</th>
-            </tr>
-          </thead>
-          <tbody id="cust-disbursed-tbody"><tr><td colspan="9" style="text-align:center;color:var(--text-dim);padding:30px">Loading...</td></tr></tbody>
-        </table>
+        <table><thead><tr>
+          <th>Name</th><th>Payment Date</th><th>Principal</th><th>Return %</th><th>Promised Return</th><th>Due Date</th><th>Disbursed On</th><th>Early/Late</th><th>Remarks</th>
+        </tr></thead>
+        <tbody id="cust-disbursed-tbody"><tr><td colspan="9" style="text-align:center;color:var(--text-dim);padding:30px">Loading...</td></tr></tbody></table>
       </div>
     </div>
   </div>
 
-  <!-- ─── TAB: AUDIT ─── -->
+  <!-- ═══ TAB: AUDIT ═══ -->
   <div class="tab-content" id="tab-audit">
     <div class="section-header">
       <div class="section-title">AUDIT LOG</div>
-      <span style="font-family:var(--mono);font-size:12px;color:var(--text-dim)">Read-only • Deletable only by master</span>
+      <span style="font-family:var(--mono);font-size:12px;color:var(--text-dim)">Read-only • Master access to delete</span>
     </div>
     <div class="card">
-      <div id="audit-log-list">
-        <div style="text-align:center;color:var(--text-dim);padding:30px;font-family:var(--mono);font-size:13px">Loading audit log...</div>
-      </div>
+      <div id="audit-log-list"><div style="text-align:center;color:var(--text-dim);padding:30px;font-family:var(--mono);font-size:13px">Loading...</div></div>
     </div>
   </div>
 
-  <!-- ─── TAB: ADMIN MANAGEMENT ─── -->
+  <!-- ═══ TAB: ADMIN ═══ -->
   <div class="tab-content master-only" id="tab-admin">
     <div class="section-header">
       <div class="section-title">ADMIN MANAGEMENT</div>
@@ -901,40 +406,26 @@
           <input class="form-input" type="email" id="new-admin-email" placeholder="admin@example.com">
         </div>
       </div>
-      <div style="margin-top:16px">
-        <button class="btn btn-accent" onclick="addAdmin()">ADD ADMIN</button>
-      </div>
+      <div style="margin-top:16px"><button class="btn btn-accent" onclick="addAdmin()">ADD ADMIN</button></div>
     </div>
     <div class="card">
       <div class="card-title">Existing Admins</div>
       <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>User ID</th>
-              <th>Email</th>
-              <th>Added On</th>
-              <th>Added By</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="admin-list-tbody"><tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:30px">Loading...</td></tr></tbody>
-        </table>
+        <table><thead><tr><th>User ID</th><th>Email</th><th>Added On</th><th>Added By</th><th>Actions</th></tr></thead>
+        <tbody id="admin-list-tbody"><tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:30px">Loading...</td></tr></tbody></table>
       </div>
     </div>
   </div>
-
 </div><!-- /portal -->
 
-<!-- ─── MODAL: NEW TRADING ENTRY ─── -->
+<!-- ═══ MODAL: NEW ENTRY ═══ -->
 <div class="modal-overlay" id="modal-entry">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title" id="entry-modal-title">NEW ENTRY</div>
+      <div class="modal-title">NEW TRADING ENTRY</div>
       <button class="modal-close" onclick="closeModal('modal-entry')">×</button>
     </div>
     <div class="modal-body">
-      <input type="hidden" id="entry-edit-id">
       <div class="form-grid">
         <div class="form-field">
           <label class="form-label">Date &amp; Time</label>
@@ -947,32 +438,122 @@
             <option value="FOC">F&amp;O Commodities</option>
           </select>
         </div>
-        <div class="form-field">
+        <div class="form-field" style="grid-column:1/-1">
           <label class="form-label">Entry Capital (₹)</label>
           <div class="capital-control">
-            <button class="capital-btn" onclick="adjustCapital('entry-capital', -1000)">−</button>
-            <input class="capital-input" id="entry-capital" type="number" placeholder="0">
-            <button class="capital-btn" onclick="adjustCapital('entry-capital', 1000)">+</button>
+            <button class="capital-btn" onclick="adjustCapital('entry-capital',-1000)">−</button>
+            <input class="capital-input" id="entry-capital" type="number" placeholder="Amount entering the market">
+            <button class="capital-btn" onclick="adjustCapital('entry-capital',1000)">+</button>
           </div>
         </div>
-        <div class="form-field">
-          <label class="form-label">Exit Capital (₹)</label>
-          <input class="form-input" id="entry-exit" type="number" placeholder="0">
-        </div>
       </div>
-      <div style="margin-top:12px;padding:12px;background:var(--bg);border:1px solid var(--border);font-family:var(--mono);font-size:13px">
-        <span style="color:var(--text-dim)">Calculated P/L: </span>
-        <span id="calc-pl" style="color:var(--accent);font-weight:600">₹ 0</span>
-      </div>
+      <p style="font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-top:14px">Exit capital will be added later using the <strong style="color:var(--accent)">CLOSE</strong> button on this entry.</p>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modal-entry')">CANCEL</button>
-      <button class="btn btn-accent" onclick="submitEntry()">SAVE ENTRY</button>
+      <button class="btn btn-accent" onclick="submitEntry()">OPEN ENTRY</button>
     </div>
   </div>
 </div>
 
-<!-- ─── MODAL: NEW CUSTOMER ─── -->
+<!-- ═══ MODAL: CLOSE ENTRY ═══ -->
+<div class="modal-overlay" id="modal-close-entry">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">CLOSE ENTRY</div>
+      <button class="modal-close" onclick="closeModal('modal-close-entry')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="close-entry-id">
+      <input type="hidden" id="close-entry-capital">
+      <div style="background:var(--bg);border:1px solid var(--border);padding:14px;margin-bottom:20px;font-family:var(--mono);font-size:12px;color:var(--text-dim)">
+        Entry Capital: <strong style="color:var(--text)" id="close-entry-capital-display">—</strong>
+      </div>
+      <div class="form-grid">
+        <div class="form-field" style="grid-column:1/-1">
+          <label class="form-label">Exit Capital (₹)</label>
+          <div class="capital-control">
+            <button class="capital-btn" onclick="adjustCapital('close-exit-capital',-1000)">−</button>
+            <input class="capital-input" id="close-exit-capital" type="number" placeholder="Amount received from market" oninput="updateClosePL()">
+            <button class="capital-btn" onclick="adjustCapital('close-exit-capital',1000)">+</button>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:14px;padding:14px;background:var(--bg);border:1px solid var(--border);font-family:var(--mono);font-size:13px">
+        <span style="color:var(--text-dim)">Calculated P/L: </span>
+        <span id="close-pl-display" style="color:var(--accent);font-weight:600">₹ 0</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-close-entry')">CANCEL</button>
+      <button class="btn btn-green" onclick="submitCloseEntry()">CLOSE &amp; RECORD P/L</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: CAPITAL ACTION ═══ -->
+<div class="modal-overlay" id="modal-capital">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="capital-modal-title">DEPOSIT</div>
+      <button class="modal-close" onclick="closeModal('modal-capital')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="capital-action-type">
+      <div class="form-grid">
+        <div class="form-field" style="grid-column:1/-1">
+          <label class="form-label">Amount (₹)</label>
+          <div class="capital-control">
+            <button class="capital-btn" onclick="adjustCapital('capital-amount',-1000)">−</button>
+            <input class="capital-input" id="capital-amount" type="number" placeholder="Enter amount">
+            <button class="capital-btn" onclick="adjustCapital('capital-amount',1000)">+</button>
+          </div>
+        </div>
+        <div class="form-field" style="grid-column:1/-1">
+          <label class="form-label">Note (Optional)</label>
+          <input class="form-input" id="capital-note" placeholder="e.g. Bank transfer, cheque...">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-capital')">CANCEL</button>
+      <button class="btn btn-accent" onclick="submitCapitalAction()">CONFIRM</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: TRANSFER ═══ -->
+<div class="modal-overlay" id="modal-transfer">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="transfer-modal-title">TRANSFER</div>
+      <button class="modal-close" onclick="closeModal('modal-transfer')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="transfer-direction">
+      <div class="form-grid">
+        <div class="form-field" style="grid-column:1/-1">
+          <label class="form-label">Amount (₹)</label>
+          <div class="capital-control">
+            <button class="capital-btn" onclick="adjustCapital('transfer-amount',-1000)">−</button>
+            <input class="capital-input" id="transfer-amount" type="number" placeholder="Enter amount">
+            <button class="capital-btn" onclick="adjustCapital('transfer-amount',1000)">+</button>
+          </div>
+        </div>
+        <div class="form-field" style="grid-column:1/-1">
+          <label class="form-label">Note (Optional)</label>
+          <input class="form-input" id="transfer-note" placeholder="Reason for transfer...">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-transfer')">CANCEL</button>
+      <button class="btn btn-accent" onclick="submitTransfer()">TRANSFER</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: CUSTOMER ═══ -->
 <div class="modal-overlay" id="modal-customer">
   <div class="modal">
     <div class="modal-header">
@@ -982,90 +563,53 @@
     <div class="modal-body">
       <input type="hidden" id="cust-edit-id">
       <div class="form-grid">
-        <div class="form-field">
-          <label class="form-label">Customer Name</label>
-          <input class="form-input" id="cust-name" placeholder="Full name">
-        </div>
-        <div class="form-field">
-          <label class="form-label">Payment Date</label>
-          <input class="form-input" id="cust-payment-date" type="date">
-        </div>
-        <div class="form-field">
-          <label class="form-label">Principal Amount (₹)</label>
-          <input class="form-input" id="cust-principal" type="number" placeholder="0" oninput="calcReturn()">
-        </div>
-        <div class="form-field">
-          <label class="form-label">Promised Return %</label>
-          <input class="form-input" id="cust-return-pct" type="number" placeholder="e.g. 10" step="0.01" oninput="calcReturn()">
-        </div>
-        <div class="form-field">
-          <label class="form-label">Promised Return (₹)</label>
-          <input class="form-input" id="cust-return-amt" type="number" placeholder="Auto-calculated" readonly style="opacity:0.7">
-        </div>
-        <div class="form-field">
-          <label class="form-label">Due Date</label>
-          <input class="form-input" id="cust-due-date" type="date">
-        </div>
+        <div class="form-field"><label class="form-label">Name</label><input class="form-input" id="cust-name" placeholder="Full name"></div>
+        <div class="form-field"><label class="form-label">Payment Date</label><input class="form-input" id="cust-payment-date" type="date"></div>
+        <div class="form-field"><label class="form-label">Principal (₹)</label><input class="form-input" id="cust-principal" type="number" placeholder="0" oninput="calcReturn()"></div>
+        <div class="form-field"><label class="form-label">Return %</label><input class="form-input" id="cust-return-pct" type="number" placeholder="e.g. 10" step="0.01" oninput="calcReturn()"></div>
+        <div class="form-field"><label class="form-label">Promised Return (₹)</label><input class="form-input" id="cust-return-amt" type="number" placeholder="Auto-calculated" readonly style="opacity:0.7"></div>
+        <div class="form-field"><label class="form-label">Due Date</label><input class="form-input" id="cust-due-date" type="date"></div>
       </div>
-      <div class="form-field" style="margin-top:14px">
-        <label class="form-label">Remarks (Optional)</label>
-        <textarea class="form-textarea" id="cust-remarks" placeholder="Any additional notes..."></textarea>
-      </div>
+      <div class="form-field" style="margin-top:14px"><label class="form-label">Remarks (Optional)</label><textarea class="form-textarea" id="cust-remarks" placeholder="Notes..."></textarea></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modal-customer')">CANCEL</button>
-      <button class="btn btn-accent" onclick="submitCustomer()">SAVE RECORD</button>
+      <button class="btn btn-accent" onclick="submitCustomer()">SAVE</button>
     </div>
   </div>
 </div>
 
-<!-- ─── MODAL: DISBURSE ─── -->
+<!-- ═══ MODAL: DISBURSE ═══ -->
 <div class="modal-overlay" id="modal-disburse">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">MARK DISBURSEMENT</div>
+      <div class="modal-title">DISBURSEMENT</div>
       <button class="modal-close" onclick="closeModal('modal-disburse')">×</button>
     </div>
     <div class="modal-body">
       <input type="hidden" id="disburse-id">
-      <p style="font-family:var(--mono);font-size:13px;color:var(--text-dim);margin-bottom:20px">Confirm disbursement for <strong id="disburse-name" style="color:var(--text)"></strong>. This record will be moved to the Disbursed sheet.</p>
+      <p style="font-family:var(--mono);font-size:13px;color:var(--text-dim);margin-bottom:20px">Confirm for <strong id="disburse-name" style="color:var(--text)"></strong>. Row moves to Disbursed sheet.</p>
       <div class="form-grid">
-        <div class="form-field">
-          <label class="form-label">Disbursement Date</label>
-          <input class="form-input" id="disburse-date" type="date">
-        </div>
+        <div class="form-field"><label class="form-label">Disbursement Date</label><input class="form-input" id="disburse-date" type="date"></div>
       </div>
-      <div class="form-field" style="margin-top:14px">
-        <label class="form-label">Disbursement Remarks (Optional)</label>
-        <textarea class="form-textarea" id="disburse-remarks" placeholder="Payment mode, notes, etc..."></textarea>
-      </div>
+      <div class="form-field" style="margin-top:14px"><label class="form-label">Remarks (Optional)</label><textarea class="form-textarea" id="disburse-remarks"></textarea></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modal-disburse')">CANCEL</button>
-      <button class="btn btn-accent" onclick="confirmDisburse()">CONFIRM DISBURSEMENT</button>
+      <button class="btn btn-accent" onclick="confirmDisburse()">CONFIRM</button>
     </div>
   </div>
 </div>
 
-
-<!-- ─── MODAL: FORGOT PASSWORD (Step 1 — Request OTP) ─── -->
+<!-- ═══ MODAL: FORGOT PASSWORD STEP 1 ═══ -->
 <div class="modal-overlay" id="modal-forgot-step1">
   <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title">RESET PASSWORD</div>
-      <button class="modal-close" onclick="closeModal('modal-forgot-step1')">×</button>
-    </div>
+    <div class="modal-header"><div class="modal-title">RESET PASSWORD</div><button class="modal-close" onclick="closeModal('modal-forgot-step1')">×</button></div>
     <div class="modal-body">
-      <p style="font-family:var(--mono);font-size:12px;color:var(--text-dim);margin-bottom:20px;line-height:1.7">Enter your User ID and registered email. A 6-digit OTP will be sent to your email.</p>
+      <p style="font-family:var(--mono);font-size:12px;color:var(--text-dim);margin-bottom:20px;line-height:1.7">Enter your User ID and registered email. A 6-digit OTP will be sent.</p>
       <div class="form-grid">
-        <div class="form-field">
-          <label class="form-label">User ID</label>
-          <input class="form-input" id="otp-userid" placeholder="Your user ID" autocomplete="off">
-        </div>
-        <div class="form-field">
-          <label class="form-label">Registered Email</label>
-          <input class="form-input" type="email" id="otp-email" placeholder="your@email.com">
-        </div>
+        <div class="form-field"><label class="form-label">User ID</label><input class="form-input" id="otp-userid" placeholder="Your user ID" autocomplete="off"></div>
+        <div class="form-field"><label class="form-label">Email</label><input class="form-input" type="email" id="otp-email" placeholder="your@email.com"></div>
       </div>
       <div class="login-error" id="otp-error1" style="margin-top:12px"></div>
     </div>
@@ -1076,28 +620,15 @@
   </div>
 </div>
 
-<!-- ─── MODAL: FORGOT PASSWORD (Step 2 — Enter OTP + New Password) ─── -->
+<!-- ═══ MODAL: FORGOT PASSWORD STEP 2 ═══ -->
 <div class="modal-overlay" id="modal-forgot-step2">
   <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title">ENTER OTP</div>
-      <button class="modal-close" onclick="closeModal('modal-forgot-step2')">×</button>
-    </div>
+    <div class="modal-header"><div class="modal-title">ENTER OTP</div><button class="modal-close" onclick="closeModal('modal-forgot-step2')">×</button></div>
     <div class="modal-body">
-      <p style="font-family:var(--mono);font-size:12px;color:var(--text-dim);margin-bottom:20px;line-height:1.7">Enter the 6-digit OTP sent to your email and your new password.</p>
       <div class="form-grid">
-        <div class="form-field">
-          <label class="form-label">OTP Code</label>
-          <input class="form-input" id="otp-code" placeholder="6-digit code" maxlength="6" style="letter-spacing:6px;font-size:18px;text-align:center">
-        </div>
-        <div class="form-field">
-          <label class="form-label">New Password</label>
-          <input class="form-input" type="password" id="otp-newpass" placeholder="Min 6 characters">
-        </div>
-        <div class="form-field">
-          <label class="form-label">Confirm New Password</label>
-          <input class="form-input" type="password" id="otp-confirmpass" placeholder="Repeat password">
-        </div>
+        <div class="form-field"><label class="form-label">OTP Code</label><input class="form-input" id="otp-code" placeholder="6-digit code" maxlength="6" style="letter-spacing:6px;font-size:18px;text-align:center"></div>
+        <div class="form-field"><label class="form-label">New Password</label><input class="form-input" type="password" id="otp-newpass" placeholder="Min 6 characters"></div>
+        <div class="form-field"><label class="form-label">Confirm Password</label><input class="form-input" type="password" id="otp-confirmpass" placeholder="Repeat password"></div>
       </div>
       <div class="login-error" id="otp-error2" style="margin-top:12px"></div>
     </div>
@@ -1108,109 +639,72 @@
   </div>
 </div>
 
-<!-- ─── MODAL: CHANGE PASSWORD (logged in) ─── -->
+<!-- ═══ MODAL: CHANGE PASSWORD ═══ -->
 <div class="modal-overlay" id="modal-change-password">
   <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title">CHANGE PASSWORD</div>
-      <button class="modal-close" onclick="closeModal('modal-change-password')">×</button>
-    </div>
+    <div class="modal-header"><div class="modal-title">CHANGE PASSWORD</div><button class="modal-close" onclick="closeModal('modal-change-password')">×</button></div>
     <div class="modal-body">
       <div class="form-grid">
-        <div class="form-field" style="grid-column:1/-1">
-          <label class="form-label">Current Password</label>
-          <input class="form-input" type="password" id="cp-current" placeholder="Current password">
-        </div>
-        <div class="form-field">
-          <label class="form-label">New Password</label>
-          <input class="form-input" type="password" id="cp-new" placeholder="Min 6 characters">
-        </div>
-        <div class="form-field">
-          <label class="form-label">Confirm New Password</label>
-          <input class="form-input" type="password" id="cp-confirm" placeholder="Repeat new password">
-        </div>
+        <div class="form-field" style="grid-column:1/-1"><label class="form-label">Current Password</label><input class="form-input" type="password" id="cp-current" placeholder="Current password"></div>
+        <div class="form-field"><label class="form-label">New Password</label><input class="form-input" type="password" id="cp-new" placeholder="Min 6 characters"></div>
+        <div class="form-field"><label class="form-label">Confirm</label><input class="form-input" type="password" id="cp-confirm" placeholder="Repeat new password"></div>
       </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modal-change-password')">CANCEL</button>
-      <button class="btn btn-accent" onclick="submitChangePassword()">UPDATE PASSWORD</button>
+      <button class="btn btn-accent" onclick="submitChangePassword()">UPDATE</button>
     </div>
   </div>
 </div>
 
-<!-- Loading overlay -->
+<!-- Loading -->
 <div class="loading-overlay" id="loading-overlay">
-  <div class="loading-box">
-    <div class="loader"></div>
-    <span id="loading-msg">Processing...</span>
-  </div>
+  <div class="loading-box"><div class="loader"></div><span id="loading-msg">Processing...</span></div>
 </div>
-
-<!-- Toast container -->
 <div class="toast-container" id="toast-container"></div>
 
-<!-- Config -->
 <script src="config.js"></script>
-
 <script>
-// ─── STATE ───────────────────────────────────────────────
-let currentUser = null;
-let isMaster = false;
-let activeSubTab = 'fo';
-let activeCustTab = 'active';
+// ══════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════
+let currentUser = null, isMaster = false;
+let allFO = [], allFOC = [], capitalTx = [], activeCustomers = [], disbursedCustomers = [];
+let chartDailyPL = null, chartCumulative = null, chartCapital = null;
+let otpUserId = '';
 
-// ─── INIT ─────────────────────────────────────────────────
-document.getElementById('login-pass').addEventListener('keydown', e => {
-  if (e.key === 'Enter') doLogin();
-});
-document.getElementById('login-user').addEventListener('keydown', e => {
-  if (e.key === 'Enter') document.getElementById('login-pass').focus();
-});
+// ══════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════
+document.getElementById('login-pass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+document.getElementById('login-user').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('login-pass').focus(); });
 
-// Live P/L calc
-document.getElementById('entry-capital').addEventListener('input', updateCalcPL);
-document.getElementById('entry-exit').addEventListener('input', updateCalcPL);
-
-// ─── AUTH ─────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════
+//  AUTH
+// ══════════════════════════════════════════════════════
 async function doLogin() {
   const uid = document.getElementById('login-user').value.trim();
-  const pw = document.getElementById('login-pass').value;
+  const pw  = document.getElementById('login-pass').value;
   if (!uid || !pw) return;
-
-  if (!window.APP_CONFIG || !window.APP_CONFIG.APPS_SCRIPT_URL) {
-    showConfigNotice();
-    // Demo mode — allow master login
-    if (uid === 'demo' && pw === 'demo') {
-      loginSuccess(uid, true);
-      return;
-    }
-    showError('Portal not configured. See README.md for setup instructions.');
-    return;
-  }
-
+  if (!window.APP_CONFIG?.APPS_SCRIPT_URL) { showLoginError('Portal not configured. Add your Apps Script URL to config.js'); return; }
   showLoading('Authenticating...');
   try {
-    const res = await apiCall({ action: 'login', userId: uid, password: pw });
+    const res = await apiCall({ action:'login', userId:uid, password:pw });
     hideLoading();
     if (res.success) {
-      loginSuccess(uid, res.isMaster === true || res.isMaster === "true");
+      loginSuccess(uid, res.isMaster === true || res.isMaster === 'true');
     } else {
-      showError(res.message || 'Invalid credentials');
+      showLoginError(res.message || 'Invalid credentials');
     }
-  } catch (e) {
-    hideLoading();
-    showError('Connection error. Check your Apps Script URL in config.js');
-  }
+  } catch(e) { hideLoading(); showLoginError('Connection error'); }
 }
 
 function loginSuccess(uid, master) {
-  currentUser = uid;
-  isMaster = master;
+  currentUser = uid; isMaster = master;
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('portal').style.display = 'block';
   document.getElementById('current-user-display').textContent = uid.toUpperCase();
   document.getElementById('role-display').textContent = master ? 'MASTER' : 'ADMIN';
-
   if (master) {
     document.querySelectorAll('.master-only').forEach(el => el.style.display = 'block');
     document.getElementById('tab-btn-admin').style.display = 'inline-block';
@@ -1219,330 +713,386 @@ function loginSuccess(uid, master) {
 }
 
 function doLogout() {
-  currentUser = null;
-  isMaster = false;
+  currentUser = null; isMaster = false;
   document.getElementById('portal').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('login-user').value = '';
   document.getElementById('login-pass').value = '';
   document.getElementById('login-error').style.display = 'none';
+  allFO=[]; allFOC=[]; capitalTx=[];
 }
 
-function showError(msg) {
+function showLoginError(msg) {
   const el = document.getElementById('login-error');
-  el.textContent = msg;
-  el.style.display = 'block';
+  el.textContent = msg; el.style.display = 'block';
 }
 
-function showConfigNotice() {
-  document.getElementById('config-notice-trading').style.display = 'block';
-}
-
-// ─── NAVIGATION ───────────────────────────────────────────
+// ══════════════════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════════════════
 function switchTab(btn) {
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById(btn.dataset.tab).classList.add('active');
+  if (btn.dataset.tab === 'tab-analytics') renderCharts();
 }
 
 function switchSubTab(tab) {
-  activeSubTab = tab;
-  const foCard = document.querySelector('#tab-trading .card:first-of-type');
-  document.getElementById('foc-section').style.display = tab === 'foc' ? '' : 'none';
-  if (tab === 'fo') {
-    document.getElementById('sub-fo').style.borderColor = 'var(--accent)';
-    document.getElementById('sub-fo').style.color = 'var(--accent)';
-    document.getElementById('sub-foc').style.borderColor = '';
-    document.getElementById('sub-foc').style.color = '';
-  } else {
-    document.getElementById('sub-foc').style.borderColor = 'var(--accent)';
-    document.getElementById('sub-foc').style.color = 'var(--accent)';
-    document.getElementById('sub-fo').style.borderColor = '';
-    document.getElementById('sub-fo').style.color = '';
-  }
+  document.getElementById('fo-card').style.display  = tab==='fo'  ? '' : 'none';
+  document.getElementById('foc-card').style.display = tab==='foc' ? '' : 'none';
+  document.getElementById('sub-fo').classList.toggle('active',  tab==='fo');
+  document.getElementById('sub-foc').classList.toggle('active', tab==='foc');
 }
 
 function switchCustTab(tab) {
-  activeCustTab = tab;
-  document.getElementById('cust-active-section').style.display = tab === 'active' ? '' : 'none';
-  document.getElementById('cust-disbursed-section').style.display = tab === 'disbursed' ? '' : 'none';
-  const aBtn = document.getElementById('cust-tab-active');
-  const dBtn = document.getElementById('cust-tab-disbursed');
-  aBtn.style.borderColor = tab === 'active' ? 'var(--accent)' : '';
-  aBtn.style.color = tab === 'active' ? 'var(--accent)' : '';
-  dBtn.style.borderColor = tab === 'disbursed' ? 'var(--accent)' : '';
-  dBtn.style.color = tab === 'disbursed' ? 'var(--accent)' : '';
+  document.getElementById('cust-active-section').style.display    = tab==='active'    ? '' : 'none';
+  document.getElementById('cust-disbursed-section').style.display = tab==='disbursed' ? '' : 'none';
+  document.getElementById('cust-tab-active').classList.toggle('active',    tab==='active');
+  document.getElementById('cust-tab-disbursed').classList.toggle('active', tab==='disbursed');
 }
 
-// ─── MODALS ────────────────────────────────────────────────
-function openModal(id) { document.getElementById(id).classList.add('open'); }
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
-function openNewEntryModal() {
-  document.getElementById('entry-edit-id').value = '';
-  document.getElementById('entry-modal-title').textContent = 'NEW ENTRY';
-  const now = new Date();
-  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-  document.getElementById('entry-datetime').value = now.toISOString().slice(0, 16);
-  document.getElementById('entry-capital').value = '';
-  document.getElementById('entry-exit').value = '';
-  document.getElementById('entry-type').value = 'FO';
-  document.getElementById('calc-pl').textContent = '₹ 0';
-  openModal('modal-entry');
-}
-
-function openEditEntryModal(row) {
-  document.getElementById('entry-edit-id').value = row.id;
-  document.getElementById('entry-modal-title').textContent = 'EDIT ENTRY';
-  document.getElementById('entry-datetime').value = row.datetime;
-  document.getElementById('entry-capital').value = row.entryCapital;
-  document.getElementById('entry-exit').value = row.exitCapital;
-  document.getElementById('entry-type').value = row.type;
-  updateCalcPL();
-  openModal('modal-entry');
-}
-
-function openNewCustomerModal() {
-  document.getElementById('cust-edit-id').value = '';
-  document.getElementById('cust-modal-title').textContent = 'ADD CUSTOMER';
-  document.getElementById('cust-name').value = '';
-  document.getElementById('cust-payment-date').value = '';
-  document.getElementById('cust-principal').value = '';
-  document.getElementById('cust-return-pct').value = '';
-  document.getElementById('cust-return-amt').value = '';
-  document.getElementById('cust-due-date').value = '';
-  document.getElementById('cust-remarks').value = '';
-  openModal('modal-customer');
-}
-
-function openEditCustomerModal(row) {
-  document.getElementById('cust-edit-id').value = row.id;
-  document.getElementById('cust-modal-title').textContent = 'EDIT CUSTOMER';
-  document.getElementById('cust-name').value = row.name;
-  document.getElementById('cust-payment-date').value = row.paymentDate;
-  document.getElementById('cust-principal').value = row.principal;
-  document.getElementById('cust-return-pct').value = row.returnPct;
-  document.getElementById('cust-return-amt').value = row.returnAmt;
-  document.getElementById('cust-due-date').value = row.dueDate;
-  document.getElementById('cust-remarks').value = row.remarks || '';
-  openModal('modal-customer');
-}
-
-function openDisburseModal(id, name) {
-  document.getElementById('disburse-id').value = id;
-  document.getElementById('disburse-name').textContent = name;
-  const today = new Date().toISOString().split('T')[0];
-  document.getElementById('disburse-date').value = today;
-  document.getElementById('disburse-remarks').value = '';
-  openModal('modal-disburse');
-}
-
-// ─── CALCULATIONS ──────────────────────────────────────────
-function updateCalcPL() {
-  const entry = parseFloat(document.getElementById('entry-capital').value) || 0;
-  const exit = parseFloat(document.getElementById('entry-exit').value) || 0;
-  const pl = exit - entry;
-  const el = document.getElementById('calc-pl');
-  el.textContent = '₹ ' + formatNum(pl);
-  el.style.color = pl >= 0 ? 'var(--green)' : 'var(--red)';
-}
-
-function calcReturn() {
-  const principal = parseFloat(document.getElementById('cust-principal').value) || 0;
-  const pct = parseFloat(document.getElementById('cust-return-pct').value) || 0;
-  const ret = (principal * pct) / 100;
-  document.getElementById('cust-return-amt').value = ret ? ret.toFixed(2) : '';
-}
-
-function adjustCapital(fieldId, delta) {
-  const el = document.getElementById(fieldId);
-  const val = parseFloat(el.value) || 0;
-  el.value = Math.max(0, val + delta);
-  updateCalcPL();
-}
-
-// ─── API ───────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════
+//  API
+// ══════════════════════════════════════════════════════
 async function apiCall(payload) {
-  if (!window.APP_CONFIG || !window.APP_CONFIG.APPS_SCRIPT_URL) {
-    throw new Error('Apps Script URL not configured');
-  }
+  if (!window.APP_CONFIG?.APPS_SCRIPT_URL) throw new Error('Not configured');
   if (!payload.userId) payload.userId = currentUser;
-  // Use GET + URL param to avoid CORS preflight issues with Apps Script
-  const url = window.APP_CONFIG.APPS_SCRIPT_URL
-    + '?data=' + encodeURIComponent(JSON.stringify(payload));
-  const res = await fetch(url, { redirect: 'follow' });
+  const url = window.APP_CONFIG.APPS_SCRIPT_URL + '?data=' + encodeURIComponent(JSON.stringify(payload));
+  const res = await fetch(url, { redirect:'follow' });
   return await res.json();
 }
 
-// ─── LOAD ALL DATA ─────────────────────────────────────────
+async function publicApiCall(payload) {
+  const url = window.APP_CONFIG.APPS_SCRIPT_URL + '?data=' + encodeURIComponent(JSON.stringify(payload));
+  const res = await fetch(url, { redirect:'follow' });
+  return await res.json();
+}
+
+// ══════════════════════════════════════════════════════
+//  LOAD ALL
+// ══════════════════════════════════════════════════════
 async function loadAll() {
   loadTradingEntries();
+  loadCapital();
   loadCustomers();
   loadAuditLog();
   if (isMaster) loadAdmins();
 }
 
-// ─── TRADING ENTRIES ───────────────────────────────────────
+// ══════════════════════════════════════════════════════
+//  TRADING ENTRIES
+// ══════════════════════════════════════════════════════
+function openNewEntryModal() {
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  document.getElementById('entry-datetime').value = now.toISOString().slice(0,16);
+  document.getElementById('entry-capital').value = '';
+  document.getElementById('entry-type').value = 'FO';
+  openModal('modal-entry');
+}
+
+async function submitEntry() {
+  const entryCapital = parseFloat(document.getElementById('entry-capital').value);
+  const type = document.getElementById('entry-type').value;
+  const datetime = document.getElementById('entry-datetime').value;
+  if (!entryCapital) return toast('Entry capital required','error');
+  showLoading('Saving entry...');
+  try {
+    const res = await apiCall({ action:'addEntry', entryCapital, type, datetime });
+    hideLoading();
+    if (res.success) { closeModal('modal-entry'); toast('Entry opened'); loadTradingEntries(); loadAuditLog(); }
+    else toast(res.message||'Error','error');
+  } catch(e) { hideLoading(); toast('Connection error','error'); }
+}
+
+function openCloseEntryModal(id, entryCapital) {
+  document.getElementById('close-entry-id').value = id;
+  document.getElementById('close-entry-capital').value = entryCapital;
+  document.getElementById('close-entry-capital-display').textContent = '₹ ' + formatNum(entryCapital);
+  document.getElementById('close-exit-capital').value = '';
+  document.getElementById('close-pl-display').textContent = '₹ 0';
+  openModal('modal-close-entry');
+}
+
+function updateClosePL() {
+  const entry = parseFloat(document.getElementById('close-entry-capital').value) || 0;
+  const exit  = parseFloat(document.getElementById('close-exit-capital').value)  || 0;
+  const pl = exit - entry;
+  const el = document.getElementById('close-pl-display');
+  el.textContent = '₹ ' + formatNum(pl);
+  el.style.color = pl >= 0 ? 'var(--green)' : 'var(--red)';
+}
+
+async function submitCloseEntry() {
+  const id = document.getElementById('close-entry-id').value;
+  const exitCapital = parseFloat(document.getElementById('close-exit-capital').value);
+  if (!exitCapital && exitCapital !== 0) return toast('Exit capital required','error');
+  showLoading('Closing entry...');
+  try {
+    const res = await apiCall({ action:'closeEntry', id, exitCapital });
+    hideLoading();
+    if (res.success) { closeModal('modal-close-entry'); toast('Entry closed'); loadTradingEntries(); loadAuditLog(); }
+    else toast(res.message||'Error','error');
+  } catch(e) { hideLoading(); toast('Connection error','error'); }
+}
+
 async function loadTradingEntries() {
   try {
-    const res = await apiCall({ action: 'getEntries' });
+    const res = await apiCall({ action:'getEntries' });
     if (!res.success) return;
-    renderTradingTable('fo-tbody', res.fo || [], 'FO');
-    renderTradingTable('foc-tbody', res.foc || [], 'FOC');
-    updateStats(res.fo || [], res.foc || []);
-  } catch (e) {
-    document.getElementById('fo-tbody').innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-dim);padding:30px">Could not load entries. Check configuration.</td></tr>';
-  }
+    allFO  = res.fo  || [];
+    allFOC = res.foc || [];
+    renderTradingTable('fo-tbody',  allFO,  'FO');
+    renderTradingTable('foc-tbody', allFOC, 'FOC');
+    updateTradingStats();
+  } catch(e) {}
 }
 
 function renderTradingTable(tbodyId, rows, type) {
   const tbody = document.getElementById(tbodyId);
   if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--text-dim);padding:30px">No ${type === 'FO' ? 'F&O Stocks' : 'F&O Commodities'} entries yet.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:30px">No entries yet.</td></tr>`;
     return;
   }
-  tbody.innerHTML = rows.map(r => {
-    const pl = (parseFloat(r.exitCapital) || 0) - (parseFloat(r.entryCapital) || 0);
-    const plClass = pl >= 0 ? 'pl-pos' : 'pl-neg';
-    const tagClass = r.type === 'FO' ? 'tag-fo' : 'tag-foc';
-    const tagLabel = r.type === 'FO' ? 'F&O Stocks' : 'F&O Commodities';
+  tbody.innerHTML = [...rows].reverse().map(r => {
+    const isOpen = !r.exitCapital && r.exitCapital !== 0;
+    const pl = isOpen ? null : (parseFloat(r.exitCapital)||0) - (parseFloat(r.entryCapital)||0);
+    const plHtml = isOpen ? '<span style="color:var(--text-dim)">—</span>' : `<span class="${pl>=0?'pl-pos':'pl-neg'}">₹ ${formatNum(pl)}</span>`;
+    const exitHtml = isOpen ? '<span style="color:var(--text-dim)">—</span>' : `₹ ${formatNum(r.exitCapital)}`;
+    const statusHtml = isOpen ? '<span class="tag tag-open">OPEN</span>' : '<span class="tag tag-closed">CLOSED</span>';
+    const tagClass = r.type==='FO' ? 'tag-fo' : 'tag-foc';
+    const tagLabel = r.type==='FO' ? 'F&O Stocks' : 'F&O Commodities';
+    const closeBtn = isOpen ? `<button class="btn btn-green btn-sm" onclick="openCloseEntryModal('${r.id}','${r.entryCapital}')">CLOSE</button>` : '';
     return `<tr>
-      <td style="font-family:var(--mono);font-size:11px">${r.datetime || '—'}</td>
+      <td style="font-family:var(--mono);font-size:11px">${r.datetime||'—'}</td>
       <td>₹ ${formatNum(r.entryCapital)}</td>
-      <td>₹ ${formatNum(r.exitCapital)}</td>
-      <td class="${plClass}">₹ ${formatNum(pl)}</td>
+      <td>${exitHtml}</td>
+      <td>${plHtml}</td>
+      <td>${statusHtml}</td>
       <td><span class="tag ${tagClass}">${tagLabel}</span></td>
-      <td style="color:var(--accent);font-family:var(--mono);font-size:11px">${r.loggedBy || '—'}</td>
-      <td>
-        <button class="btn btn-outline btn-sm" onclick='openEditEntryModal(${JSON.stringify(r)})'>EDIT</button>
-      </td>
+      <td style="color:var(--accent);font-family:var(--mono);font-size:11px">${r.loggedBy||'—'}</td>
+      <td style="display:flex;gap:6px">${closeBtn}</td>
     </tr>`;
   }).join('');
 }
 
-function updateStats(fo, foc) {
-  const all = [...fo, ...foc];
+function updateTradingStats() {
+  const all = [...allFO, ...allFOC];
+  const open = all.filter(r => !r.exitCapital && r.exitCapital !== 0);
+  const closed = all.filter(r => r.exitCapital || r.exitCapital === 0);
   const today = new Date().toISOString().split('T')[0];
-  const todayEntries = all.filter(r => r.datetime && r.datetime.startsWith(today));
-
-  const totalEntry = all.reduce((s, r) => s + (parseFloat(r.entryCapital) || 0), 0);
-  const totalExit = all.reduce((s, r) => s + (parseFloat(r.exitCapital) || 0), 0);
-  const totalPL = totalExit - totalEntry;
-
-  document.getElementById('stat-entries').textContent = todayEntries.length;
-  document.getElementById('stat-entry-cap').textContent = '₹' + formatNum(totalEntry);
-  document.getElementById('stat-exit-cap').textContent = '₹' + formatNum(totalExit);
+  const todayEntries = all.filter(r => r.datetime && String(r.datetime).startsWith(today));
+  const deployed = open.reduce((s,r) => s+(parseFloat(r.entryCapital)||0), 0);
+  const totalPL = closed.reduce((s,r) => s+(parseFloat(r.exitCapital)||0)-(parseFloat(r.entryCapital)||0), 0);
+  document.getElementById('stat-open').textContent = open.length;
+  document.getElementById('stat-today').textContent = todayEntries.length;
+  document.getElementById('stat-deployed').textContent = '₹'+formatNum(deployed);
   const plEl = document.getElementById('stat-pl');
-  plEl.textContent = '₹' + formatNum(totalPL);
-  plEl.className = 'stat-value ' + (totalPL >= 0 ? 'pos' : 'neg');
+  plEl.textContent = '₹'+formatNum(totalPL);
+  plEl.className = 'stat-value '+(totalPL>=0?'pos':'neg');
 }
 
-async function submitEntry() {
-  const id = document.getElementById('entry-edit-id').value;
-  const entryCapital = parseFloat(document.getElementById('entry-capital').value);
-  const exitCapital = parseFloat(document.getElementById('entry-exit').value);
-  const type = document.getElementById('entry-type').value;
-  const datetime = document.getElementById('entry-datetime').value;
-
-  if (!entryCapital && entryCapital !== 0) return toast('Entry capital required', 'error');
-
-  showLoading('Saving entry...');
-  try {
-    const res = await apiCall({
-      action: id ? 'editEntry' : 'addEntry',
-      id, entryCapital, exitCapital, type, datetime
-    });
-    hideLoading();
-    if (res.success) {
-      closeModal('modal-entry');
-      toast(id ? 'Entry updated' : 'Entry saved');
-      loadTradingEntries();
-      loadAuditLog();
-    } else {
-      toast(res.message || 'Error saving', 'error');
-    }
-  } catch (e) {
-    hideLoading();
-    toast('Connection error', 'error');
-  }
+// ══════════════════════════════════════════════════════
+//  CAPITAL
+// ══════════════════════════════════════════════════════
+function openCapitalModal(actionType) {
+  document.getElementById('capital-action-type').value = actionType;
+  const titles = { deposit:'DEPOSIT TO CAPITAL', withdraw:'WITHDRAW FROM CAPITAL', 'portfolio-deposit':'ADD FUNDS TO PORTFOLIO', 'portfolio-withdraw':'WITHDRAW FROM PORTFOLIO' };
+  document.getElementById('capital-modal-title').textContent = titles[actionType] || 'TRANSACTION';
+  document.getElementById('capital-amount').value = '';
+  document.getElementById('capital-note').value = '';
+  openModal('modal-capital');
 }
 
-// ─── CUSTOMERS ─────────────────────────────────────────────
-async function loadCustomers() {
+async function submitCapitalAction() {
+  const actionType = document.getElementById('capital-action-type').value;
+  const amount = parseFloat(document.getElementById('capital-amount').value);
+  const note = document.getElementById('capital-note').value.trim();
+  if (!amount || amount <= 0) return toast('Enter a valid amount','error');
+  showLoading('Processing...');
   try {
-    const res = await apiCall({ action: 'getCustomers' });
+    const res = await apiCall({ action:'capitalTransaction', actionType, amount, note });
+    hideLoading();
+    if (res.success) { closeModal('modal-capital'); toast('Transaction recorded'); loadCapital(); loadAuditLog(); }
+    else toast(res.message||'Error','error');
+  } catch(e) { hideLoading(); toast('Connection error','error'); }
+}
+
+function openTransferModal(direction) {
+  document.getElementById('transfer-direction').value = direction;
+  const label = direction==='capital-to-portfolio' ? 'TRANSFER: CAPITAL → PORTFOLIO' : 'TRANSFER: PORTFOLIO → CAPITAL';
+  document.getElementById('transfer-modal-title').textContent = label;
+  document.getElementById('transfer-amount').value = '';
+  document.getElementById('transfer-note').value = '';
+  openModal('modal-transfer');
+}
+
+async function submitTransfer() {
+  const direction = document.getElementById('transfer-direction').value;
+  const amount = parseFloat(document.getElementById('transfer-amount').value);
+  const note = document.getElementById('transfer-note').value.trim();
+  if (!amount || amount <= 0) return toast('Enter a valid amount','error');
+  showLoading('Transferring...');
+  try {
+    const res = await apiCall({ action:'capitalTransfer', direction, amount, note });
+    hideLoading();
+    if (res.success) { closeModal('modal-transfer'); toast('Transfer recorded'); loadCapital(); loadAuditLog(); }
+    else toast(res.message||'Error','error');
+  } catch(e) { hideLoading(); toast('Connection error','error'); }
+}
+
+async function loadCapital() {
+  try {
+    const res = await apiCall({ action:'getCapital' });
     if (!res.success) return;
-    renderActiveCustomers(res.active || []);
-    renderDisbursedCustomers(res.disbursed || []);
-  } catch (e) {
-    document.getElementById('cust-active-tbody').innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-dim);padding:30px">Could not load customers.</td></tr>';
-  }
+    capitalTx = res.transactions || [];
+    document.getElementById('bal-capital').textContent   = '₹ ' + formatNum(res.capitalBalance);
+    document.getElementById('bal-portfolio').textContent = '₹ ' + formatNum(res.portfolioBalance);
+    renderCapitalTable(capitalTx);
+  } catch(e) {}
 }
 
-function renderActiveCustomers(rows) {
-  const tbody = document.getElementById('cust-active-tbody');
-  if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-dim);padding:30px">No active customer records.</td></tr>';
-    return;
-  }
-  const today = new Date();
-  tbody.innerHTML = rows.map(r => {
-    const due = r.dueDate ? new Date(r.dueDate) : null;
-    let statusHtml = '';
-    if (due) {
-      const diff = Math.ceil((due - today) / 86400000);
-      if (diff < 0) statusHtml = `<span class="status-overdue">OVERDUE (${Math.abs(diff)}d)</span>`;
-      else if (diff <= 7) statusHtml = `<span class="status-due">DUE SOON (${diff}d)</span>`;
-      else statusHtml = `<span class="status-active">ACTIVE</span>`;
-    }
-    return `<tr>
-      <td style="font-weight:500">${r.name}</td>
-      <td style="font-family:var(--mono);font-size:11px">${r.paymentDate || '—'}</td>
-      <td>₹ ${formatNum(r.principal)}</td>
-      <td style="color:var(--accent)">${r.returnPct}%</td>
-      <td>₹ ${formatNum(r.returnAmt)}</td>
-      <td style="font-family:var(--mono);font-size:11px">${r.dueDate || '—'}</td>
-      <td style="font-family:var(--mono);font-size:11px">${statusHtml}</td>
-      <td style="font-size:11px;color:var(--text-dim);max-width:120px">${r.remarks || '—'}</td>
-      <td>
-        <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <button class="btn btn-outline btn-sm" onclick='openEditCustomerModal(${JSON.stringify(r)})'>EDIT</button>
-          <button class="btn btn-warn btn-sm" onclick="openDisburseModal('${r.id}','${escHtml(r.name)}')">DISBURSE</button>
-        </div>
-      </td>
+function renderCapitalTable(txs) {
+  const tbody = document.getElementById('capital-tbody');
+  if (!txs.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:30px">No transactions yet.</td></tr>'; return; }
+  const typeLabels = { deposit:'Deposit', withdraw:'Withdraw', 'portfolio-deposit':'Portfolio Add', 'portfolio-withdraw':'Portfolio Withdraw', 'capital-to-portfolio':'Transfer → Portfolio', 'portfolio-to-capital':'Transfer → Capital' };
+  const typeColors = { deposit:'var(--green)', withdraw:'var(--red)', 'portfolio-deposit':'var(--green)', 'portfolio-withdraw':'var(--red)', 'capital-to-portfolio':'#a78bfa', 'portfolio-to-capital':'#a78bfa' };
+  tbody.innerHTML = [...txs].reverse().map(t => {
+    const label = typeLabels[t.actionType] || t.actionType;
+    const color = typeColors[t.actionType] || 'var(--text)';
+    const isTransfer = t.actionType && t.actionType.includes('transfer') || t.actionType && t.actionType.includes('to');
+    const sign = ['deposit','portfolio-deposit'].includes(t.actionType) ? '+' : ['withdraw','portfolio-withdraw'].includes(t.actionType) ? '-' : '⇄';
+    return `<tr class="${isTransfer?'transfer-row':''}">
+      <td style="font-family:var(--mono);font-size:11px">${t.datetime||'—'}</td>
+      <td><span style="color:${color};font-family:var(--mono);font-size:11px">${label}</span></td>
+      <td style="color:${color};font-weight:600">${sign} ₹ ${formatNum(t.amount)}</td>
+      <td style="font-family:var(--mono);font-size:11px;color:var(--text-dim)">${t.balanceAfter ? '₹ '+formatNum(t.balanceAfter) : '—'}</td>
+      <td style="font-size:11px;color:var(--text-dim)">${t.note||'—'}</td>
+      <td style="color:var(--accent);font-family:var(--mono);font-size:11px">${t.by||'—'}</td>
     </tr>`;
   }).join('');
 }
 
-function renderDisbursedCustomers(rows) {
-  const tbody = document.getElementById('cust-disbursed-tbody');
-  if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-dim);padding:30px">No disbursed records yet.</td></tr>';
-    return;
+// ══════════════════════════════════════════════════════
+//  ANALYTICS CHARTS
+// ══════════════════════════════════════════════════════
+function renderCharts() {
+  const rangeVal = document.getElementById('analytics-range').value;
+  const all = [...allFO, ...allFOC].filter(r => r.exitCapital || r.exitCapital === 0);
+
+  // Filter by range
+  let filtered = all;
+  if (rangeVal !== 'all') {
+    const days = parseInt(rangeVal);
+    const cutoff = new Date(Date.now() - days * 86400000);
+    filtered = all.filter(r => r.datetime && new Date(r.datetime) >= cutoff);
   }
-  tbody.innerHTML = rows.map(r => {
-    const due = r.dueDate ? new Date(r.dueDate) : null;
-    const dis = r.disbursedOn ? new Date(r.disbursedOn) : null;
-    let timing = '—';
-    if (due && dis) {
-      const diff = Math.ceil((dis - due) / 86400000);
-      if (diff < 0) timing = `<span style="color:var(--green)">EARLY (${Math.abs(diff)}d)</span>`;
-      else if (diff === 0) timing = `<span style="color:var(--accent)">ON TIME</span>`;
-      else timing = `<span style="color:var(--red)">LATE (+${diff}d)</span>`;
-    }
-    return `<tr class="row-disbursed">
-      <td style="font-weight:500">${r.name}</td>
-      <td style="font-family:var(--mono);font-size:11px">${r.paymentDate || '—'}</td>
-      <td>₹ ${formatNum(r.principal)}</td>
-      <td>${r.returnPct}%</td>
-      <td>₹ ${formatNum(r.returnAmt)}</td>
-      <td style="font-family:var(--mono);font-size:11px">${r.dueDate || '—'}</td>
-      <td style="font-family:var(--mono);font-size:11px">${r.disbursedOn || '—'}</td>
-      <td style="font-family:var(--mono);font-size:11px">${timing}</td>
-      <td style="font-size:11px;color:var(--text-dim)">${r.disbursedRemarks || r.remarks || '—'}</td>
-    </tr>`;
-  }).join('');
+
+  // Group by day
+  const dayMap = {};
+  filtered.forEach(r => {
+    const day = String(r.datetime || '').slice(0, 10);
+    if (!day) return;
+    if (!dayMap[day]) dayMap[day] = 0;
+    dayMap[day] += (parseFloat(r.exitCapital)||0) - (parseFloat(r.entryCapital)||0);
+  });
+
+  const days = Object.keys(dayMap).sort();
+  const dailyPLs = days.map(d => dayMap[d]);
+  const cumulativePLs = dailyPLs.reduce((acc, v, i) => { acc.push((acc[i-1]||0) + v); return acc; }, []);
+
+  // Total P/L stats
+  const totalPL = dailyPLs.reduce((s,v) => s+v, 0);
+  const winDays = dailyPLs.filter(v => v > 0).length;
+  const winRate = days.length ? Math.round((winDays/days.length)*100) : 0;
+  const bestDay = days.length ? Math.max(...dailyPLs) : 0;
+  const worstDay = days.length ? Math.min(...dailyPLs) : 0;
+
+  document.getElementById('an-pl').textContent    = '₹' + formatNum(totalPL);
+  document.getElementById('an-pl').className      = 'stat-value ' + (totalPL>=0?'pos':'neg');
+  document.getElementById('an-win').textContent   = winRate + '%';
+  document.getElementById('an-best').textContent  = '₹' + formatNum(bestDay);
+  document.getElementById('an-worst').textContent = '₹' + formatNum(worstDay);
+
+  // Capital total from transactions
+  let capBal = 0, portBal = 0;
+  const capitalDays = {}, capitalDayMap = {};
+  if (capitalTx.length) {
+    const txSorted = [...capitalTx].sort((a,b) => new Date(a.datetime)-new Date(b.datetime));
+    txSorted.forEach(t => {
+      const day = String(t.datetime||'').slice(0,10);
+      const amt = parseFloat(t.amount)||0;
+      if (t.accountType==='capital') {
+        if (['deposit'].includes(t.actionType)) capBal += amt;
+        else if (['withdraw'].includes(t.actionType)) capBal -= amt;
+        else if (t.actionType==='capital-to-portfolio') { capBal -= amt; portBal += amt; }
+        else if (t.actionType==='portfolio-to-capital') { capBal += amt; portBal -= amt; }
+      } else {
+        if (['portfolio-deposit'].includes(t.actionType)) portBal += amt;
+        else if (['portfolio-withdraw'].includes(t.actionType)) portBal -= amt;
+      }
+      capitalDayMap[day] = capBal + portBal;
+    });
+  }
+  const capDays = Object.keys(capitalDayMap).sort();
+  const capTotals = capDays.map(d => capitalDayMap[d]);
+  const totalCapital = (capTotals[capTotals.length-1]||0) + totalPL;
+  document.getElementById('an-total').textContent = '₹' + formatNum(totalCapital);
+
+  const chartDefaults = { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false }, tooltip:{ backgroundColor:'#111118', titleColor:'#e8e8f0', bodyColor:'#6b6b80', borderColor:'#2a2a3a', borderWidth:1, callbacks:{ label: ctx => ' ₹ ' + formatNum(ctx.raw) } } }, scales:{ x:{ grid:{ color:'rgba(42,42,58,0.5)' }, ticks:{ color:'#6b6b80', font:{ family:'IBM Plex Mono', size:10 } } }, y:{ grid:{ color:'rgba(42,42,58,0.5)' }, ticks:{ color:'#6b6b80', font:{ family:'IBM Plex Mono', size:10 }, callback: v => '₹'+formatNum(v) } } } };
+
+  // Chart 1: Daily P/L Bar
+  if (chartDailyPL) chartDailyPL.destroy();
+  chartDailyPL = new Chart(document.getElementById('chart-daily-pl'), {
+    type: 'bar',
+    data: {
+      labels: days,
+      datasets: [{ data: dailyPLs, backgroundColor: dailyPLs.map(v => v>=0 ? 'rgba(0,212,170,0.6)' : 'rgba(255,71,87,0.6)'), borderColor: dailyPLs.map(v => v>=0 ? '#00d4aa' : '#ff4757'), borderWidth: 1 }]
+    },
+    options: { ...chartDefaults }
+  });
+
+  // Chart 2: Cumulative P/L Line
+  if (chartCumulative) chartCumulative.destroy();
+  chartCumulative = new Chart(document.getElementById('chart-cumulative'), {
+    type: 'line',
+    data: {
+      labels: days,
+      datasets: [{ data: cumulativePLs, borderColor:'#00d4aa', backgroundColor:'rgba(0,212,170,0.06)', borderWidth:2, pointRadius:3, pointBackgroundColor:'#00d4aa', fill:true, tension:0.3 }]
+    },
+    options: { ...chartDefaults }
+  });
+
+  // Chart 3: Total Capital Over Time
+  if (chartCapital) chartCapital.destroy();
+  chartCapital = new Chart(document.getElementById('chart-capital'), {
+    type: 'line',
+    data: {
+      labels: capDays.length ? capDays : days,
+      datasets: [{ label:'Total Capital', data: capTotals.length ? capTotals : [], borderColor:'#a78bfa', backgroundColor:'rgba(124,58,237,0.06)', borderWidth:2, pointRadius:3, pointBackgroundColor:'#a78bfa', fill:true, tension:0.3 }]
+    },
+    options: { ...chartDefaults, plugins:{ ...chartDefaults.plugins, legend:{ display:true, labels:{ color:'#6b6b80', font:{ family:'IBM Plex Mono', size:10 } } } } }
+  });
+}
+
+// ══════════════════════════════════════════════════════
+//  CUSTOMERS
+// ══════════════════════════════════════════════════════
+function openNewCustomerModal() {
+  document.getElementById('cust-edit-id').value = '';
+  document.getElementById('cust-modal-title').textContent = 'ADD CUSTOMER';
+  ['cust-name','cust-payment-date','cust-principal','cust-return-pct','cust-return-amt','cust-due-date','cust-remarks'].forEach(id => document.getElementById(id).value = '');
+  openModal('modal-customer');
+}
+
+function calcReturn() {
+  const p = parseFloat(document.getElementById('cust-principal').value)||0;
+  const pct = parseFloat(document.getElementById('cust-return-pct').value)||0;
+  document.getElementById('cust-return-amt').value = p && pct ? ((p*pct)/100).toFixed(2) : '';
 }
 
 async function submitCustomer() {
@@ -1554,150 +1104,191 @@ async function submitCustomer() {
   const returnAmt = parseFloat(document.getElementById('cust-return-amt').value);
   const dueDate = document.getElementById('cust-due-date').value;
   const remarks = document.getElementById('cust-remarks').value.trim();
-
-  if (!name) return toast('Name is required', 'error');
-  if (!paymentDate) return toast('Payment date required', 'error');
-  if (!principal) return toast('Principal amount required', 'error');
-
-  showLoading('Saving customer...');
+  if (!name) return toast('Name required','error');
+  if (!paymentDate) return toast('Payment date required','error');
+  if (!principal) return toast('Principal required','error');
+  showLoading('Saving...');
   try {
-    const res = await apiCall({
-      action: id ? 'editCustomer' : 'addCustomer',
-      id, name, paymentDate, principal, returnPct, returnAmt, dueDate, remarks
-    });
+    const res = await apiCall({ action: id?'editCustomer':'addCustomer', id, name, paymentDate, principal, returnPct, returnAmt, dueDate, remarks });
     hideLoading();
-    if (res.success) {
-      closeModal('modal-customer');
-      toast(id ? 'Customer updated' : 'Customer added');
-      loadCustomers();
-      loadAuditLog();
-    } else {
-      toast(res.message || 'Error saving', 'error');
+    if (res.success) { closeModal('modal-customer'); toast(id?'Customer updated':'Customer added'); loadCustomers(); loadAuditLog(); }
+    else toast(res.message||'Error','error');
+  } catch(e) { hideLoading(); toast('Connection error','error'); }
+}
+
+async function loadCustomers() {
+  try {
+    const res = await apiCall({ action:'getCustomers' });
+    if (!res.success) return;
+    activeCustomers = res.active||[]; disbursedCustomers = res.disbursed||[];
+    renderActiveCustomers(activeCustomers);
+    renderDisbursedCustomers(disbursedCustomers);
+  } catch(e) {}
+}
+
+function renderActiveCustomers(rows) {
+  const tbody = document.getElementById('cust-active-tbody');
+  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-dim);padding:30px">No active records.</td></tr>'; return; }
+  const today = new Date();
+  tbody.innerHTML = rows.map(r => {
+    const due = r.dueDate ? new Date(r.dueDate) : null;
+    let statusHtml = '';
+    if (due) {
+      const diff = Math.ceil((due - today)/86400000);
+      if (diff < 0) statusHtml = `<span class="status-overdue">OVERDUE (${Math.abs(diff)}d)</span>`;
+      else if (diff <= 7) statusHtml = `<span class="status-due">DUE SOON (${diff}d)</span>`;
+      else statusHtml = `<span class="status-active">ACTIVE</span>`;
     }
-  } catch (e) {
-    hideLoading();
-    toast('Connection error', 'error');
-  }
+    return `<tr>
+      <td style="font-weight:500">${r.name}</td>
+      <td style="font-family:var(--mono);font-size:11px">${r.paymentDate||'—'}</td>
+      <td>₹ ${formatNum(r.principal)}</td>
+      <td style="color:var(--accent)">${r.returnPct}%</td>
+      <td>₹ ${formatNum(r.returnAmt)}</td>
+      <td style="font-family:var(--mono);font-size:11px">${r.dueDate||'—'}</td>
+      <td style="font-family:var(--mono);font-size:11px">${statusHtml}</td>
+      <td style="font-size:11px;color:var(--text-dim)">${r.remarks||'—'}</td>
+      <td style="display:flex;gap:6px">
+        <button class="btn btn-outline btn-sm" onclick='openEditCustomerModal(${JSON.stringify(r)})'>EDIT</button>
+        <button class="btn btn-warn btn-sm" onclick="openDisburseModal('${r.id}','${escHtml(r.name)}')">DISBURSE</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function renderDisbursedCustomers(rows) {
+  const tbody = document.getElementById('cust-disbursed-tbody');
+  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-dim);padding:30px">No disbursed records.</td></tr>'; return; }
+  tbody.innerHTML = rows.map(r => {
+    const due = r.dueDate ? new Date(r.dueDate) : null;
+    const dis = r.disbursedOn ? new Date(r.disbursedOn) : null;
+    let timing = '—';
+    if (due && dis) {
+      const diff = Math.ceil((dis - due)/86400000);
+      if (diff < 0) timing = `<span style="color:var(--green)">EARLY (${Math.abs(diff)}d)</span>`;
+      else if (diff === 0) timing = `<span style="color:var(--accent)">ON TIME</span>`;
+      else timing = `<span style="color:var(--red)">LATE (+${diff}d)</span>`;
+    }
+    return `<tr class="row-disbursed">
+      <td>${r.name}</td>
+      <td style="font-family:var(--mono);font-size:11px">${r.paymentDate||'—'}</td>
+      <td>₹ ${formatNum(r.principal)}</td>
+      <td>${r.returnPct}%</td>
+      <td>₹ ${formatNum(r.returnAmt)}</td>
+      <td style="font-family:var(--mono);font-size:11px">${r.dueDate||'—'}</td>
+      <td style="font-family:var(--mono);font-size:11px">${r.disbursedOn||'—'}</td>
+      <td style="font-family:var(--mono);font-size:11px">${timing}</td>
+      <td style="font-size:11px;color:var(--text-dim)">${r.disbursedRemarks||r.remarks||'—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function openEditCustomerModal(r) {
+  document.getElementById('cust-edit-id').value = r.id;
+  document.getElementById('cust-modal-title').textContent = 'EDIT CUSTOMER';
+  document.getElementById('cust-name').value = r.name;
+  document.getElementById('cust-payment-date').value = r.paymentDate;
+  document.getElementById('cust-principal').value = r.principal;
+  document.getElementById('cust-return-pct').value = r.returnPct;
+  document.getElementById('cust-return-amt').value = r.returnAmt;
+  document.getElementById('cust-due-date').value = r.dueDate;
+  document.getElementById('cust-remarks').value = r.remarks||'';
+  openModal('modal-customer');
+}
+
+function openDisburseModal(id, name) {
+  document.getElementById('disburse-id').value = id;
+  document.getElementById('disburse-name').textContent = name;
+  document.getElementById('disburse-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('disburse-remarks').value = '';
+  openModal('modal-disburse');
 }
 
 async function confirmDisburse() {
   const id = document.getElementById('disburse-id').value;
   const disbursedOn = document.getElementById('disburse-date').value;
   const remarks = document.getElementById('disburse-remarks').value.trim();
-
-  if (!disbursedOn) return toast('Disbursement date required', 'error');
-
-  showLoading('Processing disbursement...');
+  if (!disbursedOn) return toast('Date required','error');
+  showLoading('Processing...');
   try {
-    const res = await apiCall({ action: 'disburseCustomer', id, disbursedOn, remarks });
+    const res = await apiCall({ action:'disburseCustomer', id, disbursedOn, remarks });
     hideLoading();
-    if (res.success) {
-      closeModal('modal-disburse');
-      toast('Disbursement recorded');
-      loadCustomers();
-      loadAuditLog();
-    } else {
-      toast(res.message || 'Error', 'error');
-    }
-  } catch (e) {
-    hideLoading();
-    toast('Connection error', 'error');
-  }
+    if (res.success) { closeModal('modal-disburse'); toast('Disbursement recorded'); loadCustomers(); loadAuditLog(); }
+    else toast(res.message||'Error','error');
+  } catch(e) { hideLoading(); toast('Connection error','error'); }
 }
 
-// ─── AUDIT LOG ─────────────────────────────────────────────
+// ══════════════════════════════════════════════════════
+//  AUDIT LOG
+// ══════════════════════════════════════════════════════
 async function loadAuditLog() {
   try {
-    const res = await apiCall({ action: 'getAuditLog' });
+    const res = await apiCall({ action:'getAuditLog' });
     if (!res.success) return;
-    renderAuditLog(res.entries || []);
-  } catch (e) {}
+    const container = document.getElementById('audit-log-list');
+    const entries = res.entries||[];
+    if (!entries.length) { container.innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:30px;font-family:var(--mono)">No audit entries yet.</div>'; return; }
+    container.innerHTML = entries.map(e => `
+      <div class="audit-entry">
+        <span class="audit-time">${e.timestamp||'—'}</span>
+        <span class="audit-user">${e.user||'—'}</span>
+        <span class="audit-msg">${escHtml(e.message||'')}</span>
+      </div>`).join('');
+  } catch(e) {}
 }
 
-function renderAuditLog(entries) {
-  const container = document.getElementById('audit-log-list');
-  if (!entries.length) {
-    container.innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:30px;font-family:var(--mono);font-size:13px">No audit entries yet.</div>';
-    return;
-  }
-  container.innerHTML = entries.map(e => `
-    <div class="audit-entry">
-      <span class="audit-time">${e.timestamp || '—'}</span>
-      <span class="audit-user">${e.user || '—'}</span>
-      <span class="audit-msg">${escHtml(e.message || '')}</span>
-    </div>
-  `).join('');
-}
-
-// ─── ADMIN MANAGEMENT ──────────────────────────────────────
+// ══════════════════════════════════════════════════════
+//  ADMIN MANAGEMENT
+// ══════════════════════════════════════════════════════
 async function loadAdmins() {
   try {
-    const res = await apiCall({ action: 'getAdmins' });
+    const res = await apiCall({ action:'getAdmins' });
     if (!res.success) return;
     const tbody = document.getElementById('admin-list-tbody');
-    const admins = res.admins || [];
-    if (!admins.length) {
-      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-dim);padding:20px">No admins added yet.</td></tr>';
-      return;
-    }
+    const admins = res.admins||[];
+    if (!admins.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:20px">No admins yet.</td></tr>'; return; }
     tbody.innerHTML = admins.map(a => `<tr>
       <td style="font-family:var(--mono)">${a.userId}</td>
-      <td style="font-family:var(--mono);font-size:11px;color:var(--text-dim)">${a.email || '—'}</td>
-      <td style="font-family:var(--mono);font-size:11px">${a.addedOn || '—'}</td>
-      <td style="color:var(--text-dim);font-family:var(--mono);font-size:11px">${a.addedBy || '—'}</td>
+      <td style="font-family:var(--mono);font-size:11px;color:var(--text-dim)">${a.email||'—'}</td>
+      <td style="font-family:var(--mono);font-size:11px">${a.addedOn||'—'}</td>
+      <td style="color:var(--text-dim);font-family:var(--mono);font-size:11px">${a.addedBy||'—'}</td>
       <td><button class="btn btn-danger btn-sm" onclick="removeAdmin('${a.userId}')">REMOVE</button></td>
     </tr>`).join('');
-  } catch (e) {}
+  } catch(e) {}
 }
 
 async function addAdmin() {
-  const uid   = document.getElementById('new-admin-user').value.trim();
-  const pw    = document.getElementById('new-admin-pass').value;
+  const uid = document.getElementById('new-admin-user').value.trim();
+  const pw  = document.getElementById('new-admin-pass').value;
   const email = document.getElementById('new-admin-email').value.trim();
-  if (!uid || !pw || !email) return toast('User ID, password, and email are all required', 'error');
-
+  if (!uid||!pw||!email) return toast('User ID, password and email are all required','error');
   showLoading('Adding admin...');
   try {
-    const res = await apiCall({ action: 'addAdmin', newUserId: uid, newPassword: pw, newEmail: email });
+    const res = await apiCall({ action:'addAdmin', newUserId:uid, newPassword:pw, newEmail:email });
     hideLoading();
     if (res.success) {
       document.getElementById('new-admin-user').value = '';
       document.getElementById('new-admin-pass').value = '';
-      toast('Admin added successfully');
-      loadAdmins();
-      loadAuditLog();
-    } else {
-      toast(res.message || 'Error', 'error');
-    }
-  } catch (e) {
-    hideLoading();
-    toast('Connection error', 'error');
-  }
+      document.getElementById('new-admin-email').value = '';
+      toast('Admin added'); loadAdmins(); loadAuditLog();
+    } else toast(res.message||'Error','error');
+  } catch(e) { hideLoading(); toast('Connection error','error'); }
 }
 
 async function removeAdmin(uid) {
   if (!confirm(`Remove admin "${uid}"?`)) return;
-  showLoading('Removing admin...');
+  showLoading('Removing...');
   try {
-    const res = await apiCall({ action: 'removeAdmin', targetUserId: uid });
+    const res = await apiCall({ action:'removeAdmin', targetUserId:uid });
     hideLoading();
-    if (res.success) {
-      toast('Admin removed');
-      loadAdmins();
-      loadAuditLog();
-    } else {
-      toast(res.message || 'Error', 'error');
-    }
-  } catch (e) {
-    hideLoading();
-    toast('Connection error', 'error');
-  }
+    if (res.success) { toast('Admin removed'); loadAdmins(); loadAuditLog(); }
+    else toast(res.message||'Error','error');
+  } catch(e) { hideLoading(); toast('Connection error','error'); }
 }
 
-
-// ─── FORGOT PASSWORD ──────────────────────────────────────
-let otpUserId = '';
-
+// ══════════════════════════════════════════════════════
+//  PASSWORD RESET (OTP)
+// ══════════════════════════════════════════════════════
 function showForgotPassword() {
   document.getElementById('otp-userid').value = '';
   document.getElementById('otp-email').value = '';
@@ -1710,102 +1301,42 @@ async function sendOtp() {
   const email  = document.getElementById('otp-email').value.trim();
   const errEl  = document.getElementById('otp-error1');
   errEl.style.display = 'none';
-
-  if (!userId || !email) {
-    errEl.textContent = 'Both fields are required.';
-    errEl.style.display = 'block';
-    return;
-  }
-
+  if (!userId||!email) { errEl.textContent='Both fields required'; errEl.style.display='block'; return; }
   showLoading('Sending OTP...');
   try {
-    const res = await fetch(
-      window.APP_CONFIG.APPS_SCRIPT_URL + '?data=' + encodeURIComponent(JSON.stringify({ action: 'requestOtp', userId, email })),
-      { redirect: 'follow' }
-    );
-    const data = await res.json();
+    const res = await publicApiCall({ action:'requestOtp', userId, email });
     hideLoading();
-    if (data.success) {
-      otpUserId = userId;
-      closeModal('modal-forgot-step1');
+    if (res.success) {
+      otpUserId = userId; closeModal('modal-forgot-step1');
       document.getElementById('otp-code').value = '';
       document.getElementById('otp-newpass').value = '';
       document.getElementById('otp-confirmpass').value = '';
       document.getElementById('otp-error2').style.display = 'none';
-      openModal('modal-forgot-step2');
-      toast('OTP sent! Check your email.');
-    } else {
-      errEl.textContent = data.message || 'Failed to send OTP';
-      errEl.style.display = 'block';
-    }
-  } catch (e) {
-    hideLoading();
-    errEl.textContent = 'Connection error.';
-    errEl.style.display = 'block';
-  }
+      openModal('modal-forgot-step2'); toast('OTP sent! Check your email.');
+    } else { errEl.textContent = res.message||'Failed to send OTP'; errEl.style.display='block'; }
+  } catch(e) { hideLoading(); errEl.textContent='Connection error'; errEl.style.display='block'; }
 }
 
 async function submitPasswordReset() {
-  const otp         = document.getElementById('otp-code').value.trim();
+  const otp = document.getElementById('otp-code').value.trim();
   const newPassword = document.getElementById('otp-newpass').value;
-  const confirm     = document.getElementById('otp-confirmpass').value;
-  const errEl       = document.getElementById('otp-error2');
+  const confirm = document.getElementById('otp-confirmpass').value;
+  const errEl = document.getElementById('otp-error2');
   errEl.style.display = 'none';
-
-  if (!otp || !newPassword || !confirm) {
-    errEl.textContent = 'All fields are required.';
-    errEl.style.display = 'block';
-    return;
-  }
-  if (newPassword !== confirm) {
-    errEl.textContent = 'Passwords do not match.';
-    errEl.style.display = 'block';
-    return;
-  }
-  if (newPassword.length < 6) {
-    errEl.textContent = 'Password must be at least 6 characters.';
-    errEl.style.display = 'block';
-    return;
-  }
-
+  if (!otp||!newPassword||!confirm) { errEl.textContent='All fields required'; errEl.style.display='block'; return; }
+  if (newPassword !== confirm) { errEl.textContent='Passwords do not match'; errEl.style.display='block'; return; }
+  if (newPassword.length < 6) { errEl.textContent='Min 6 characters'; errEl.style.display='block'; return; }
   showLoading('Resetting password...');
   try {
-    // Step 1: verify OTP
-    const v = await fetch(
-      window.APP_CONFIG.APPS_SCRIPT_URL + '?data=' + encodeURIComponent(JSON.stringify({ action: 'verifyOtp', userId: otpUserId, otp })),
-      { redirect: 'follow' }
-    );
-    const vData = await v.json();
-    if (!vData.success) {
-      hideLoading();
-      errEl.textContent = vData.message || 'Invalid OTP';
-      errEl.style.display = 'block';
-      return;
-    }
-
-    // Step 2: reset password
-    const r = await fetch(
-      window.APP_CONFIG.APPS_SCRIPT_URL + '?data=' + encodeURIComponent(JSON.stringify({ action: 'resetPassword', userId: otpUserId, otp, newPassword })),
-      { redirect: 'follow' }
-    );
-    const rData = await r.json();
+    const v = await publicApiCall({ action:'verifyOtp', userId:otpUserId, otp });
+    if (!v.success) { hideLoading(); errEl.textContent=v.message||'Invalid OTP'; errEl.style.display='block'; return; }
+    const r = await publicApiCall({ action:'resetPassword', userId:otpUserId, otp, newPassword });
     hideLoading();
-    if (rData.success) {
-      closeModal('modal-forgot-step2');
-      toast('Password reset successfully! Please log in.');
-      otpUserId = '';
-    } else {
-      errEl.textContent = rData.message || 'Reset failed';
-      errEl.style.display = 'block';
-    }
-  } catch (e) {
-    hideLoading();
-    errEl.textContent = 'Connection error.';
-    errEl.style.display = 'block';
-  }
+    if (r.success) { closeModal('modal-forgot-step2'); toast('Password reset! Please log in.'); otpUserId=''; }
+    else { errEl.textContent=r.message||'Reset failed'; errEl.style.display='block'; }
+  } catch(e) { hideLoading(); errEl.textContent='Connection error'; errEl.style.display='block'; }
 }
 
-// ─── CHANGE PASSWORD (logged in) ──────────────────────────
 function openChangePasswordModal() {
   document.getElementById('cp-current').value = '';
   document.getElementById('cp-new').value = '';
@@ -1815,55 +1346,50 @@ function openChangePasswordModal() {
 
 async function submitChangePassword() {
   const currentPassword = document.getElementById('cp-current').value;
-  const newPassword     = document.getElementById('cp-new').value;
-  const confirm         = document.getElementById('cp-confirm').value;
-
-  if (!currentPassword || !newPassword || !confirm) return toast('All fields required', 'error');
-  if (newPassword !== confirm) return toast('Passwords do not match', 'error');
-  if (newPassword.length < 6)  return toast('Password must be at least 6 characters', 'error');
-
-  showLoading('Updating password...');
+  const newPassword = document.getElementById('cp-new').value;
+  const confirm = document.getElementById('cp-confirm').value;
+  if (!currentPassword||!newPassword||!confirm) return toast('All fields required','error');
+  if (newPassword !== confirm) return toast('Passwords do not match','error');
+  if (newPassword.length < 6) return toast('Min 6 characters','error');
+  showLoading('Updating...');
   try {
-    const res = await apiCall({ action: 'changePassword', currentPassword, newPassword });
+    const res = await apiCall({ action:'changePassword', currentPassword, newPassword });
     hideLoading();
-    if (res.success) {
-      closeModal('modal-change-password');
-      toast('Password updated! Please log in again.');
-      setTimeout(doLogout, 1500);
-    } else {
-      toast(res.message || 'Failed to update password', 'error');
-    }
-  } catch (e) {
-    hideLoading();
-    toast('Connection error', 'error');
-  }
+    if (res.success) { closeModal('modal-change-password'); toast('Password updated! Logging out...'); setTimeout(doLogout,1500); }
+    else toast(res.message||'Error','error');
+  } catch(e) { hideLoading(); toast('Connection error','error'); }
 }
 
-// ─── UTILS ─────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════════════════
+function adjustCapital(fieldId, delta) {
+  const el = document.getElementById(fieldId);
+  el.value = Math.max(0, (parseFloat(el.value)||0) + delta);
+  if (fieldId==='close-exit-capital') updateClosePL();
+}
+
 function formatNum(val) {
-  const n = parseFloat(val) || 0;
-  return n.toLocaleString('en-IN', { maximumFractionDigits: 2 });
+  const n = parseFloat(val)||0;
+  return n.toLocaleString('en-IN', { maximumFractionDigits:2 });
 }
 
 function escHtml(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-function showLoading(msg = 'Processing...') {
+function showLoading(msg='Processing...') {
   document.getElementById('loading-msg').textContent = msg;
   document.getElementById('loading-overlay').classList.add('open');
 }
 
-function hideLoading() {
-  document.getElementById('loading-overlay').classList.remove('open');
-}
+function hideLoading() { document.getElementById('loading-overlay').classList.remove('open'); }
 
-function toast(msg, type = 'success') {
-  const container = document.getElementById('toast-container');
+function toast(msg, type='success') {
   const el = document.createElement('div');
-  el.className = 'toast' + (type !== 'success' ? ' ' + type : '');
+  el.className = 'toast' + (type!=='success' ? ' '+type : '');
   el.textContent = msg;
-  container.appendChild(el);
+  document.getElementById('toast-container').appendChild(el);
   setTimeout(() => el.remove(), 3500);
 }
 </script>
