@@ -1249,9 +1249,9 @@ function openNewCustomerModal() {
 }
 
 function calcReturn() {
-  const p = parseFloat(document.getElementById('cust-principal').value)||0;
+  const p   = parseFloat(document.getElementById('cust-principal').value)||0;
   const pct = parseFloat(document.getElementById('cust-return-pct').value)||0;
-  document.getElementById('cust-return-amt').value = p && pct ? ((p*pct)/100).toFixed(2) : '';
+  document.getElementById('cust-return-amt').value = p && pct ? (p + (p*pct)/100).toFixed(2) : '';
 }
 
 async function submitCustomer() {
