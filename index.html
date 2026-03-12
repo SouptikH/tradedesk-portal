@@ -1142,8 +1142,9 @@ function renderTradingTable(tbodyId, rows, type) {
     const plHtml = isOpen ? '<span style="color:var(--text-dim)">—</span>' : `<span class="${pl>=0?'pl-pos':'pl-neg'}">₹ ${formatNum(pl)}</span>`;
     const exitHtml = isOpen ? '<span style="color:var(--text-dim)">—</span>' : `₹ ${formatNum(r.exitCapital)}`;
     const statusHtml = isOpen ? '<span class="tag tag-open">OPEN</span>' : '<span class="tag tag-closed">CLOSED</span>';
-    const tagClass = r.type==='FO' ? 'tag-fo' : 'tag-foc';
-    const tagLabel = r.type==='FO' ? 'F&O Stocks' : 'F&O Commodities';
+    // Use the passed-in table type (not r.type) — most reliable since FO rows are always in FO sheet
+    const tagClass = type==='FO' ? 'tag-fo' : 'tag-foc';
+    const tagLabel = type==='FO' ? 'F&O Stocks' : 'F&O Commodities';
     const closeBtn = isOpen ? `<button class="btn btn-green btn-sm" onclick="openCloseEntryModal('${r.id}','${r.entryCapital}')">CLOSE</button>` : '';
     const editBtn   = `<button class="btn btn-outline btn-sm" onclick='openEditEntryModal(${JSON.stringify(r)})'>EDIT</button>`;
     const deleteBtn = `<button class="btn btn-danger btn-sm" onclick="confirmDeleteEntry('${r.id}','${r.type}','${r.entryCapital}')">DEL</button>`;
