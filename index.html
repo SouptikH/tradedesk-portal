@@ -939,43 +939,10 @@ async function publicApiCall(payload) {
 //  LOAD ALL
 // ══════════════════════════════════════════════════════
 async function loadAll() {
-  try {
-    const [entries, capital, customers, audit] = await Promise.all([
-      apiCall({ action:'getEntries' }),
-      apiCall({ action:'getCapital' }),
-      apiCall({ action:'getCustomers' }),
-      apiCall({ action:'getAuditLog' })
-    ]);
-
-    // Trading
-    if (entries.success) {
-      allFO  = entries.fo  || [];
-      allFOC = entries.foc || [];
-      renderTradingTable('fo-tbody',  allFO,  'FO');
-      renderTradingTable('foc-tbody', allFOC, 'FOC');
-      updateTradingStats();
-    }
-
-    // Capital
-    if (capital.success) {
-      capitalTx = capital.transactions || [];
-      document.getElementById('bal-capital').textContent   = '₹ ' + formatNum(capital.capitalBalance);
-      document.getElementById('bal-portfolio').textContent = '₹ ' + formatNum(capital.portfolioBalance);
-      renderCapitalTable(capitalTx);
-    }
-
-    // Customers
-    if (customers.success) {
-      activeCustomers    = customers.active    || [];
-      disbursedCustomers = customers.disbursed || [];
-      applyFiltersAndRender();
-      renderDisbursedCustomers(disbursedCustomers);
-    }
-
-    // Audit
-    if (audit.success) renderAuditLog(audit.entries || []);
-
-  } catch(e) { console.error('loadAll error', e); }
+  loadTradingEntries();
+  loadCapital();
+  loadCustomers();
+  loadAuditLog();
   if (isMaster) loadAdmins();
 }
 
