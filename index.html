@@ -181,6 +181,10 @@
   .capital-input{flex:1;background:var(--bg);border:1px solid var(--border);border-left:none;border-right:none;color:var(--text);font-family:var(--mono);font-size:13px;padding:10px 14px;outline:none;text-align:center;}
   .capital-input:focus{border-color:var(--accent);}
 
+  .filter-btn{font-family:var(--mono);font-size:11px;letter-spacing:1px;padding:5px 10px;cursor:pointer;background:transparent;border:1px solid var(--border);color:var(--text-dim);transition:all .2s;text-transform:uppercase;}
+  .filter-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .filter-btn.active{background:rgba(0,212,170,0.1);border-color:var(--accent);color:var(--accent);}
+
   @media(max-width:700px){
     .topbar,.nav-tabs,.tab-content{padding-left:14px;padding-right:14px;}
     .form-grid{grid-template-columns:1fr;}
@@ -353,6 +357,37 @@
       <button class="sub-tab active" id="cust-tab-active" onclick="switchCustTab('active')">Active</button>
       <button class="sub-tab" id="cust-tab-disbursed" onclick="switchCustTab('disbursed')">Disbursed</button>
     </div>
+    <div id="cust-filter-bar" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;align-items:center">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-right:4px">FILTER:</div>
+
+      <div style="display:flex;gap:4px">
+        <button class="filter-btn active" data-filter="term" data-val="all" onclick="setFilter('term','all',this)">All Terms</button>
+        <button class="filter-btn" data-filter="term" data-val="short" onclick="setFilter('term','short',this)">Short <span style="opacity:0.6">(&lt;28d)</span></button>
+        <button class="filter-btn" data-filter="term" data-val="mid" onclick="setFilter('term','mid',this)">Mid <span style="opacity:0.6">(28–45d)</span></button>
+        <button class="filter-btn" data-filter="term" data-val="long" onclick="setFilter('term','long',this)">Long <span style="opacity:0.6">(&gt;45d)</span></button>
+      </div>
+
+      <div style="width:1px;height:24px;background:var(--border)"></div>
+
+      <div style="display:flex;gap:4px">
+        <button class="filter-btn active" data-filter="cap" data-val="all" onclick="setFilter('cap','all',this)">All Caps</button>
+        <button class="filter-btn" data-filter="cap" data-val="small" onclick="setFilter('cap','small',this)">Small <span style="opacity:0.6">(&lt;50k)</span></button>
+        <button class="filter-btn" data-filter="cap" data-val="mid" onclick="setFilter('cap','mid',this)">Mid <span style="opacity:0.6">(50k–1.5L)</span></button>
+        <button class="filter-btn" data-filter="cap" data-val="large" onclick="setFilter('cap','large',this)">Large <span style="opacity:0.6">(&gt;1.5L)</span></button>
+      </div>
+
+      <div style="width:1px;height:24px;background:var(--border)"></div>
+
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-family:var(--mono);font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Sort:</span>
+        <button class="filter-btn active" data-sort="due" onclick="setSort('due',this)">Due Date</button>
+        <button class="filter-btn" data-sort="principal" onclick="setSort('principal',this)">Principal</button>
+        <button class="filter-btn" data-sort="name" onclick="setSort('name',this)">Name</button>
+      </div>
+
+      <div style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--text-dim)" id="cust-filter-count"></div>
+    </div>
+
     <div class="card" id="cust-active-section">
       <div class="card-title">Active Records</div>
       <div class="table-wrap">
@@ -861,6 +896,7 @@ function switchSubTab(tab) {
 function switchCustTab(tab) {
   document.getElementById('cust-active-section').style.display    = tab==='active'    ? '' : 'none';
   document.getElementById('cust-disbursed-section').style.display = tab==='disbursed' ? '' : 'none';
+  document.getElementById('cust-filter-bar').style.display        = tab==='active'    ? '' : 'none';
   document.getElementById('cust-tab-active').classList.toggle('active',    tab==='active');
   document.getElementById('cust-tab-disbursed').classList.toggle('active', tab==='disbursed');
 }
@@ -1241,6 +1277,76 @@ function renderCharts() {
 // ══════════════════════════════════════════════════════
 //  CUSTOMERS
 // ══════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
+//  CUSTOMER FILTERS
+// ══════════════════════════════════════════════════════
+const custFilters = { term: 'all', cap: 'all' };
+let custSort = 'due';
+
+function setFilter(type, val, btn) {
+  custFilters[type] = val;
+  // Deactivate all buttons in same group
+  document.querySelectorAll(`.filter-btn[data-filter="${type}"]`).forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  applyFiltersAndRender();
+}
+
+function setSort(val, btn) {
+  custSort = val;
+  document.querySelectorAll('.filter-btn[data-sort]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  applyFiltersAndRender();
+}
+
+function getTermCategory(paymentDate, dueDate) {
+  if (!paymentDate || !dueDate) return 'unknown';
+  const p = new Date(paymentDate), d = new Date(dueDate);
+  if (isNaN(p) || isNaN(d)) return 'unknown';
+  const days = Math.round((d - p) / 86400000);
+  if (days < 28)  return 'short';
+  if (days <= 45) return 'mid';
+  return 'long';
+}
+
+function getCapCategory(principal) {
+  const p = parseFloat(principal)||0;
+  if (p < 50000)  return 'small';
+  if (p <= 150000) return 'mid';
+  return 'large';
+}
+
+function applyFiltersAndRender() {
+  let rows = [...activeCustomers];
+
+  // Filter by term
+  if (custFilters.term !== 'all') {
+    rows = rows.filter(r => getTermCategory(r.paymentDate, r.dueDate) === custFilters.term);
+  }
+
+  // Filter by cap
+  if (custFilters.cap !== 'all') {
+    rows = rows.filter(r => getCapCategory(r.principal) === custFilters.cap);
+  }
+
+  // Sort
+  rows.sort((a, b) => {
+    if (custSort === 'due') {
+      return new Date(a.dueDate||0) - new Date(b.dueDate||0);
+    } else if (custSort === 'principal') {
+      return (parseFloat(b.principal)||0) - (parseFloat(a.principal)||0);
+    } else if (custSort === 'name') {
+      return String(a.name).localeCompare(String(b.name));
+    }
+    return 0;
+  });
+
+  // Update count
+  const countEl = document.getElementById('cust-filter-count');
+  if (countEl) countEl.textContent = rows.length + ' of ' + activeCustomers.length + ' records';
+
+  renderActiveCustomers(rows);
+}
+
 function openNewCustomerModal() {
   document.getElementById('cust-edit-id').value = '';
   document.getElementById('cust-modal-title').textContent = 'ADD CUSTOMER';
@@ -1280,7 +1386,7 @@ async function loadCustomers() {
     const res = await apiCall({ action:'getCustomers' });
     if (!res.success) return;
     activeCustomers = res.active||[]; disbursedCustomers = res.disbursed||[];
-    renderActiveCustomers(activeCustomers);
+    applyFiltersAndRender();
     renderDisbursedCustomers(disbursedCustomers);
   } catch(e) {}
 }
@@ -1298,8 +1404,20 @@ function renderActiveCustomers(rows) {
       else if (diff <= 7) statusHtml = `<span class="status-due">DUE SOON (${diff}d)</span>`;
       else statusHtml = `<span class="status-active">ACTIVE</span>`;
     }
+    const term = getTermCategory(r.paymentDate, r.dueDate);
+    const cap  = getCapCategory(r.principal);
+    const termColors = { short:'#fb923c', mid:'#a78bfa', long:'var(--accent)', unknown:'var(--text-dim)' };
+    const capColors  = { small:'var(--text-dim)', mid:'#fbbf24', large:'#f87171' };
+    const termLabel  = { short:'SHORT', mid:'MID', long:'LONG', unknown:'—' };
+    const capLabel   = { small:'SMALL', mid:'MID CAP', large:'LARGE' };
     return `<tr>
-      <td style="font-weight:500">${r.name}</td>
+      <td style="font-weight:500">
+        ${r.name}
+        <div style="margin-top:4px;display:flex;gap:4px">
+          <span style="font-family:var(--mono);font-size:9px;padding:1px 6px;border:1px solid ${termColors[term]};color:${termColors[term]}">${termLabel[term]}</span>
+          <span style="font-family:var(--mono);font-size:9px;padding:1px 6px;border:1px solid ${capColors[cap]};color:${capColors[cap]}">${capLabel[cap]}</span>
+        </div>
+      </td>
       <td style="font-family:var(--mono);font-size:11px">${formatDateOnly(r.paymentDate)}</td>
       <td>₹ ${formatNum(r.principal)}</td>
       <td style="color:var(--accent)">${r.returnPct}%</td>
