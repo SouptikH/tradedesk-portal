@@ -828,6 +828,15 @@ document.getElementById('login-pass').addEventListener('keydown', e => { if(e.ke
 document.getElementById('login-user').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('login-pass').focus(); });
 
 // ══════════════════════════════════════════════════════
+//  SESSION RESTORE
+// ══════════════════════════════════════════════════════
+(function restoreSession() {
+  const uid    = sessionStorage.getItem('td_user');
+  const master = sessionStorage.getItem('td_master') === '1';
+  if (uid) loginSuccess(uid, master);
+})();
+
+// ══════════════════════════════════════════════════════
 //  AUTH
 // ══════════════════════════════════════════════════════
 async function doLogin() {
@@ -849,6 +858,9 @@ async function doLogin() {
 
 function loginSuccess(uid, master) {
   currentUser = uid; isMaster = master;
+  // Persist session across refreshes
+  sessionStorage.setItem('td_user', uid);
+  sessionStorage.setItem('td_master', master ? '1' : '0');
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('portal').style.display = 'block';
   document.getElementById('current-user-display').textContent = uid.toUpperCase();
@@ -862,6 +874,8 @@ function loginSuccess(uid, master) {
 
 function doLogout() {
   currentUser = null; isMaster = false;
+  sessionStorage.removeItem('td_user');
+  sessionStorage.removeItem('td_master');
   document.getElementById('portal').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('login-user').value = '';
