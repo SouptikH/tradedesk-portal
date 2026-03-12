@@ -940,26 +940,41 @@ async function publicApiCall(payload) {
 // ══════════════════════════════════════════════════════
 async function loadAll() {
   try {
-    const res = await apiCall({ action:'getAll' });
-    if (!res.success) return;
+    const [entries, capital, customers, audit] = await Promise.all([
+      apiCall({ action:'getEntries' }),
+      apiCall({ action:'getCapital' }),
+      apiCall({ action:'getCustomers' }),
+      apiCall({ action:'getAuditLog' })
+    ]);
+
     // Trading
-    allFO  = res.fo  || [];
-    allFOC = res.foc || [];
-    renderTradingTable('fo-tbody',  allFO,  'FO');
-    renderTradingTable('foc-tbody', allFOC, 'FOC');
-    updateTradingStats();
+    if (entries.success) {
+      allFO  = entries.fo  || [];
+      allFOC = entries.foc || [];
+      renderTradingTable('fo-tbody',  allFO,  'FO');
+      renderTradingTable('foc-tbody', allFOC, 'FOC');
+      updateTradingStats();
+    }
+
     // Capital
-    capitalTx = res.transactions || [];
-    document.getElementById('bal-capital').textContent   = '₹ ' + formatNum(res.capitalBalance);
-    document.getElementById('bal-portfolio').textContent = '₹ ' + formatNum(res.portfolioBalance);
-    renderCapitalTable(capitalTx);
+    if (capital.success) {
+      capitalTx = capital.transactions || [];
+      document.getElementById('bal-capital').textContent   = '₹ ' + formatNum(capital.capitalBalance);
+      document.getElementById('bal-portfolio').textContent = '₹ ' + formatNum(capital.portfolioBalance);
+      renderCapitalTable(capitalTx);
+    }
+
     // Customers
-    activeCustomers    = res.active    || [];
-    disbursedCustomers = res.disbursed || [];
-    applyFiltersAndRender();
-    renderDisbursedCustomers(disbursedCustomers);
+    if (customers.success) {
+      activeCustomers    = customers.active    || [];
+      disbursedCustomers = customers.disbursed || [];
+      applyFiltersAndRender();
+      renderDisbursedCustomers(disbursedCustomers);
+    }
+
     // Audit
-    renderAuditLog(res.auditEntries || []);
+    if (audit.success) renderAuditLog(audit.entries || []);
+
   } catch(e) { console.error('loadAll error', e); }
   if (isMaster) loadAdmins();
 }
@@ -997,7 +1012,7 @@ async function submitEntry() {
   try {
     const res = await apiCall({ action:'addEntry', entryCapital, type, datetime });
     hideLoading();
-    if (res.success) { closeModal('modal-entry'); toast('Entry opened — portfolio updated'); loadAll(); }
+    if (res.success) { closeModal('modal-entry'); toast('Entry opened — portfolio updated'); loadTradingEntries(); loadCapital(); }
     else toast(res.message||'Error','error');
   } catch(e) { hideLoading(); toast('Connection error','error'); }
 }
@@ -1029,7 +1044,7 @@ async function submitEditEntry() {
   try {
     const res = await apiCall({ action: 'editEntry', id, type, datetime, entryCapital, exitCapital });
     hideLoading();
-    if (res.success) { closeModal('modal-edit-entry'); toast('Entry updated'); loadAll(); }
+    if (res.success) { closeModal('modal-edit-entry'); toast('Entry updated'); loadTradingEntries(); }
     else toast(res.message || 'Error', 'error');
   } catch(e) { hideLoading(); toast('Connection error', 'error'); }
 }
@@ -1060,13 +1075,21 @@ async function submitCloseEntry() {
   try {
     const res = await apiCall({ action:'closeEntry', id, exitCapital });
     hideLoading();
-    if (res.success) { closeModal('modal-close-entry'); toast(`Entry closed — P/L: ₹${formatNum(res.pl||0)}`); loadAll(); }
+    if (res.success) { closeModal('modal-close-entry'); toast(`Entry closed — P/L: ₹${formatNum(res.pl||0)}`); loadTradingEntries(); loadCapital(); }
     else toast(res.message||'Error','error');
   } catch(e) { hideLoading(); toast('Connection error','error'); }
 }
 
 async function loadTradingEntries() {
-  await loadAll();
+  try {
+    const res = await apiCall({ action:'getEntries' });
+    if (!res.success) return;
+    allFO  = res.fo  || [];
+    allFOC = res.foc || [];
+    renderTradingTable('fo-tbody',  allFO,  'FO');
+    renderTradingTable('foc-tbody', allFOC, 'FOC');
+    updateTradingStats();
+  } catch(e) {}
 }
 
 function renderTradingTable(tbodyId, rows, type) {
@@ -1136,7 +1159,7 @@ async function submitCapitalAction() {
   try {
     const res = await apiCall({ action:'capitalTransaction', actionType, amount, note });
     hideLoading();
-    if (res.success) { closeModal('modal-capital'); toast('Transaction recorded'); loadAll(); }
+    if (res.success) { closeModal('modal-capital'); toast('Transaction recorded'); loadCapital(); }
     else toast(res.message||'Error','error');
   } catch(e) { hideLoading(); toast('Connection error','error'); }
 }
@@ -1159,13 +1182,20 @@ async function submitTransfer() {
   try {
     const res = await apiCall({ action:'capitalTransfer', direction, amount, note });
     hideLoading();
-    if (res.success) { closeModal('modal-transfer'); toast('Transfer recorded'); loadAll(); }
+    if (res.success) { closeModal('modal-transfer'); toast('Transfer recorded'); loadCapital(); }
     else toast(res.message||'Error','error');
   } catch(e) { hideLoading(); toast('Connection error','error'); }
 }
 
 async function loadCapital() {
-  await loadAll();
+  try {
+    const res = await apiCall({ action:'getCapital' });
+    if (!res.success) return;
+    capitalTx = res.transactions || [];
+    document.getElementById('bal-capital').textContent   = '₹ ' + formatNum(res.capitalBalance);
+    document.getElementById('bal-portfolio').textContent = '₹ ' + formatNum(res.portfolioBalance);
+    renderCapitalTable(capitalTx);
+  } catch(e) {}
 }
 
 function renderCapitalTable(txs) {
@@ -1393,13 +1423,20 @@ async function submitCustomer() {
   try {
     const res = await apiCall({ action: id?'editCustomer':'addCustomer', id, name, paymentDate, principal, returnPct, returnAmt, dueDate, remarks });
     hideLoading();
-    if (res.success) { closeModal('modal-customer'); toast(id?'Customer updated':'Customer added — principal added to Capital'); loadAll(); }
+    if (res.success) { closeModal('modal-customer'); toast(id?'Customer updated':'Customer added — principal added to Capital'); loadCustomers(); loadCapital(); }
     else toast(res.message||'Error','error');
   } catch(e) { hideLoading(); toast('Connection error','error'); }
 }
 
 async function loadCustomers() {
-  await loadAll();
+  try {
+    const res = await apiCall({ action:'getCustomers' });
+    if (!res.success) return;
+    activeCustomers    = res.active    || [];
+    disbursedCustomers = res.disbursed || [];
+    applyFiltersAndRender();
+    renderDisbursedCustomers(disbursedCustomers);
+  } catch(e) {}
 }
 
 function renderActiveCustomers(rows) {
@@ -1502,7 +1539,7 @@ async function confirmDisburse() {
   try {
     const res = await apiCall({ action:'disburseCustomer', id, disbursedOn, remarks });
     hideLoading();
-    if (res.success) { closeModal('modal-disburse'); toast('Disbursement recorded — capital updated'); loadAll(); }
+    if (res.success) { closeModal('modal-disburse'); toast('Disbursement recorded — capital updated'); loadCustomers(); loadCapital(); }
     else toast(res.message||'Error','error');
   } catch(e) { hideLoading(); toast('Connection error','error'); }
 }
@@ -1597,7 +1634,7 @@ async function submitEditCapital() {
   try {
     const res = await apiCall({ action:'editCapitalTransaction', id, newAmount, newNote });
     hideLoading();
-    if (res.success) { closeModal('modal-edit-capital'); toast('Transaction updated — balances recalculated'); loadAll(); }
+    if (res.success) { closeModal('modal-edit-capital'); toast('Transaction updated — balances recalculated'); loadCapital(); }
     else toast(res.message || 'Error', 'error');
   } catch(e) { hideLoading(); toast('Connection error', 'error'); }
 }
@@ -1630,7 +1667,7 @@ async function executeDelete() {
     if (res.success) {
       closeModal('modal-confirm-delete');
       toast('Deleted and logged in audit trail');
-      loadAll();
+      if (type === 'entry') { loadTradingEntries(); loadCapital(); } else { loadCustomers(); loadCapital(); }
     } else toast(res.message || 'Error', 'error');
   } catch(e) { hideLoading(); toast('Connection error', 'error'); }
 }
