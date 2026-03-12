@@ -281,6 +281,10 @@
           <div style="font-family:var(--mono);font-size:12px;color:var(--green)" id="stat-best-pct"></div>
         </div>
       </div>
+      <div class="stat-cell">
+        <div class="stat-label">Trading Account</div>
+        <div class="stat-value" id="stat-portfolio-bal" style="color:var(--accent)">—</div>
+      </div>
     </div>
     <div class="card" style="margin-bottom:20px;padding:20px 24px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
@@ -1338,6 +1342,11 @@ function updateTradingStats() {
 
   // Closed trades count
   document.getElementById('stat-closed').textContent = closed.length;
+
+  // Trading account balance — mirror from capital tab
+  const portBalText = (document.getElementById('bal-portfolio').textContent || '').trim();
+  const statPortEl  = document.getElementById('stat-portfolio-bal');
+  if (statPortEl) statPortEl.textContent = portBalText || '—';
 
   // Best trade — highest % return
   if (bestObj) {
