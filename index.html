@@ -265,13 +265,22 @@
       <button class="btn btn-accent" onclick="openNewEntryModal()">+ NEW ENTRY</button>
     </div>
     <div class="stats-bar">
-      <div class="stat-cell"><div class="stat-label">Today's P/L</div><div class="stat-value" id="stat-today-pl">—</div></div>
+      <div class="stat-cell">
+        <div class="stat-label">Today's P/L</div>
+        <div class="stat-value" id="stat-today-pl">—</div>
+        <div style="font-family:var(--mono);font-size:11px;margin-top:4px" id="stat-today-pl-pct"></div>
+      </div>
       <div class="stat-cell"><div class="stat-label">Win Rate</div><div class="stat-value" id="stat-winrate">—</div></div>
       <div class="stat-cell"><div class="stat-label">Total Capital</div><div class="stat-value" id="stat-total-capital">—</div></div>
       <div class="stat-cell"><div class="stat-label">Net P/L (All Time)</div><div class="stat-value" id="stat-pl">—</div></div>
       <div class="stat-cell"><div class="stat-label">Closed Trades</div><div class="stat-value" id="stat-closed">—</div></div>
-      <div class="stat-cell"><div class="stat-label">Best Trade</div><div class="stat-value pos" id="stat-best">—</div></div>
-      <div class="stat-cell"><div class="stat-label">Worst Trade</div><div class="stat-value neg" id="stat-worst">—</div></div>
+      <div class="stat-cell">
+        <div class="stat-label">Best Trade</div>
+        <div style="display:flex;align-items:baseline;gap:8px">
+          <div class="stat-value pos" id="stat-best">—</div>
+          <div style="font-family:var(--mono);font-size:12px;color:var(--green)" id="stat-best-pct"></div>
+        </div>
+      </div>
     </div>
     <div class="sub-tabs">
       <button class="sub-tab active" id="sub-fo" onclick="switchSubTab('fo')">F&amp;O Stocks</button>
@@ -1184,20 +1193,37 @@ function updateTradingStats() {
   const wins = closed.filter(r => (parseFloat(r.exitCapital)||0) > (parseFloat(r.entryCapital)||0));
   const winRate = closed.length ? Math.round((wins.length / closed.length) * 100) : 0;
 
-  // Best / worst single trade
-  const pls = closed.map(r => (parseFloat(r.exitCapital)||0) - (parseFloat(r.entryCapital)||0));
-  const best  = pls.length ? Math.max(...pls) : 0;
-  const worst = pls.length ? Math.min(...pls) : 0;
+  // Best trade by percentage return
+  const plObjs = closed.map(r => {
+    const entry = parseFloat(r.entryCapital)||0;
+    const exit  = parseFloat(r.exitCapital)||0;
+    const pl    = exit - entry;
+    const pct   = entry > 0 ? (pl / entry) * 100 : 0;
+    return { pl, pct, entry };
+  });
+  const bestObj = plObjs.length ? plObjs.reduce((a,b) => b.pct > a.pct ? b : a) : null;
+
+  // Today P/L as % of today's total entry capital
+  const todayEntryCapital = todayClosed.reduce((s,r) => s+(parseFloat(r.entryCapital)||0), 0);
+  const todayPLpct = todayEntryCapital > 0 ? (todayPL / todayEntryCapital) * 100 : 0;
 
   // Total capital — portfolio + capital balance from DOM
-  const portText = (document.getElementById('bal-portfolio').textContent||'').replace(/[₹,\s]/g,'');
-  const capText  = (document.getElementById('bal-capital').textContent||'').replace(/[₹,\s]/g,'');
+  const portText = (document.getElementById('bal-portfolio').textContent||'').replace(/[^0-9.-]/g,'');
+  const capText  = (document.getElementById('bal-capital').textContent||'').replace(/[^0-9.-]/g,'');
   const totalCap = (parseFloat(portText)||0) + (parseFloat(capText)||0);
 
   // Today P/L
   const todayEl = document.getElementById('stat-today-pl');
   todayEl.textContent = '₹' + formatNum(todayPL);
   todayEl.className = 'stat-value ' + (todayPL > 0 ? 'pos' : todayPL < 0 ? 'neg' : '');
+  const todayPctEl = document.getElementById('stat-today-pl-pct');
+  if (todayEntryCapital > 0) {
+    todayPctEl.textContent = (todayPLpct >= 0 ? '+' : '') + todayPLpct.toFixed(2) + '% on ₹' + formatNum(todayEntryCapital);
+    todayPctEl.style.color = todayPLpct >= 0 ? 'var(--green)' : 'var(--red)';
+  } else {
+    todayPctEl.textContent = 'No closed trades today';
+    todayPctEl.style.color = 'var(--text-muted)';
+  }
 
   // Win rate
   document.getElementById('stat-winrate').textContent = winRate + '%';
@@ -1214,13 +1240,14 @@ function updateTradingStats() {
   // Closed trades count
   document.getElementById('stat-closed').textContent = closed.length;
 
-  // Best trade
-  document.getElementById('stat-best').textContent = pls.length ? '₹' + formatNum(best) : '—';
-
-  // Worst trade
-  const worstEl = document.getElementById('stat-worst');
-  worstEl.textContent = pls.length ? '₹' + formatNum(worst) : '—';
-  worstEl.className = 'stat-value ' + (worst < 0 ? 'neg' : 'pos');
+  // Best trade — highest % return
+  if (bestObj) {
+    document.getElementById('stat-best').textContent = '₹' + formatNum(bestObj.pl);
+    document.getElementById('stat-best-pct').textContent = '(' + (bestObj.pct >= 0 ? '+' : '') + bestObj.pct.toFixed(1) + '%)';
+  } else {
+    document.getElementById('stat-best').textContent = '—';
+    document.getElementById('stat-best-pct').textContent = '';
+  }
 }
 
 // ══════════════════════════════════════════════════════
