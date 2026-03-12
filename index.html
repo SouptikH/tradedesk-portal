@@ -1140,7 +1140,7 @@ function renderTradingTable(tbodyId, rows, type) {
     return;
   }
   tbody.innerHTML = [...rows].reverse().map(r => {
-    const isOpen = !r.exitCapital && r.exitCapital !== 0 || String(r.status).toUpperCase() === 'OPEN';
+    const isOpen = r.exitCapital === '' || r.exitCapital === null || r.exitCapital === undefined || String(r.exitCapital).trim() === '';
     const pl = isOpen ? null : (parseFloat(r.exitCapital)||0) - (parseFloat(r.entryCapital)||0);
     const plHtml = isOpen ? '<span style="color:var(--text-dim)">—</span>' : `<span class="${pl>=0?'pl-pos':'pl-neg'}">₹ ${formatNum(pl)}</span>`;
     const exitHtml = isOpen ? '<span style="color:var(--text-dim)">—</span>' : `₹ ${formatNum(r.exitCapital)}`;
@@ -1166,7 +1166,8 @@ function renderTradingTable(tbodyId, rows, type) {
 
 function updateTradingStats() {
   const all    = [...allFO, ...allFOC];
-  const closed = all.filter(r => String(r.status||"").toUpperCase() === "CLOSED");
+  // A trade is closed if it has a non-empty exitCapital value
+  const closed = all.filter(r => r.exitCapital !== "" && r.exitCapital !== null && r.exitCapital !== undefined && String(r.exitCapital).trim() !== "");
   const today  = new Date().toISOString().split('T')[0];
 
   // Today P/L — closed trades where closedAt is today
