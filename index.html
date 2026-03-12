@@ -282,6 +282,17 @@
         </div>
       </div>
     </div>
+    <div class="card" style="margin-bottom:20px;padding:20px 24px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase">Recent P/L — Last 14 Days</div>
+        <div style="font-family:var(--mono);font-size:11px" id="sparkline-summary"></div>
+      </div>
+      <div style="position:relative;height:64px">
+        <canvas id="sparkline-chart"></canvas>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:8px;font-family:var(--mono);font-size:10px;color:var(--text-muted)" id="sparkline-labels"></div>
+    </div>
+
     <div class="sub-tabs">
       <button class="sub-tab active" id="sub-fo" onclick="switchSubTab('fo')">F&amp;O Stocks</button>
       <button class="sub-tab" id="sub-foc" onclick="switchSubTab('foc')">F&amp;O Commodities</button>
@@ -866,7 +877,7 @@
 // ══════════════════════════════════════════════════════
 let currentUser = null, isMaster = false;
 let allFO = [], allFOC = [], capitalTx = [], activeCustomers = [], disbursedCustomers = [];
-let chartDailyPL = null, chartCumulative = null, chartCapital = null;
+let chartDailyPL = null, chartCumulative = null, chartCapital = null, sparklineChart = null;
 let otpUserId = '';
 
 // ══════════════════════════════════════════════════════
@@ -1030,6 +1041,93 @@ async function loadAll() {
 }
 
 // ══════════════════════════════════════════════════════
+//  SPARKLINE
+// ══════════════════════════════════════════════════════
+function renderSparkline() {
+  const all    = [...allFO, ...allFOC];
+  const closed = all.filter(r => r.exitCapital !== '' && r.exitCapital !== null && r.exitCapital !== undefined && String(r.exitCapital).trim() !== '');
+
+  // Build last 14 days
+  const days = [];
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    days.push(d.toISOString().slice(0, 10));
+  }
+
+  const dayMap = {};
+  days.forEach(d => dayMap[d] = 0);
+  closed.forEach(r => {
+    const day = String(r.closedAt || r.datetime || '').slice(0, 10);
+    if (dayMap[day] !== undefined) {
+      dayMap[day] += (parseFloat(r.exitCapital)||0) - (parseFloat(r.entryCapital)||0);
+    }
+  });
+
+  const values = days.map(d => dayMap[d]);
+  const colors = values.map(v => v > 0 ? 'rgba(0,212,170,0.8)' : v < 0 ? 'rgba(255,71,87,0.8)' : 'rgba(42,42,58,0.8)');
+  const borderColors = values.map(v => v > 0 ? '#00d4aa' : v < 0 ? '#ff4757' : '#2a2a3a');
+
+  // Short label: just day number for every other day
+  const shortLabels = days.map((d, i) => i % 2 === 0 ? d.slice(8) : '');
+
+  // Summary text
+  const activeDays  = values.filter(v => v !== 0).length;
+  const periodPL    = values.reduce((s, v) => s + v, 0);
+  const summaryEl   = document.getElementById('sparkline-summary');
+  if (summaryEl) {
+    summaryEl.innerHTML = `<span style="color:var(--text-dim)">14d total: </span><span style="color:${periodPL>=0?'var(--green)':'var(--red)'}">₹${formatNum(periodPL)}</span><span style="color:var(--text-muted);margin-left:12px">${activeDays} active days</span>`;
+  }
+
+  // Labels row
+  const labelsEl = document.getElementById('sparkline-labels');
+  if (labelsEl) labelsEl.innerHTML = shortLabels.map(l => `<span>${l}</span>`).join('');
+
+  // Draw chart
+  const ctx = document.getElementById('sparkline-chart');
+  if (!ctx) return;
+  if (sparklineChart) sparklineChart.destroy();
+  sparklineChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: days,
+      datasets: [{
+        data: values,
+        backgroundColor: colors,
+        borderColor: borderColors,
+        borderWidth: 1,
+        borderRadius: 2,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#111118',
+          titleColor: '#6b6b80',
+          bodyColor: '#e8e8f0',
+          borderColor: '#2a2a3a',
+          borderWidth: 1,
+          callbacks: {
+            title: ctx => ctx[0].label,
+            label: ctx => ' ₹ ' + formatNum(ctx.raw)
+          }
+        }
+      },
+      scales: {
+        x: { display: false },
+        y: {
+          display: false,
+          grid: { display: false }
+        }
+      }
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════
 //  TRADING ENTRIES
 // ══════════════════════════════════════════════════════
 function openNewEntryModal() {
@@ -1139,6 +1237,7 @@ async function loadTradingEntries() {
     renderTradingTable('fo-tbody',  allFO,  'FO');
     renderTradingTable('foc-tbody', allFOC, 'FOC');
     updateTradingStats();
+    renderSparkline();
   } catch(e) {}
 }
 
